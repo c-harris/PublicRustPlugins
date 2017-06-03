@@ -1,19 +1,28 @@
-# What is this?
+# Jake's Rust Plugins
 
-This repo isn't properly organized. It is more of an online backup of some important public plugins, that people can look through and check out.
-
-
+1. [Anti Foundation Stack](#anti-foundation-stack)
+2. [Blueprints Revived](#blueprints-revived)
+3. [Combat Log](#combat-log)
+4. [Jake UI Framework](#jake-ui-framework)
+5. [No Despawning](#no-despawning)
+6. [Recycle Tweaks](#recycle-tweaks)
+7. [Visual Debug](#visual-debug)
+8. [Weapons On Back](#weapons-on-back)
 
 # Plugins
 
 
 ## Anti Foundation Stack
 
+* [Oxide Listing](http://google.com/?q=link+to+oxide+page)
+
 Luckily, this bug has been fixed in the main game.
 
 A simple bug fix to stop players from stacking square foundations inside eachother. [(To prevent this)](https://gyazo.com/8b5b1c10cb8e65da78e4d1258205d8c8)
 
-## BlueprintsRevived (The Blueprint System)
+## Blueprints Revived (The Blueprint System)
+
+* [Oxide Listing](http://oxidemod.org/plugins/blueprints-revived.2433/)
 
 [Preview](https://gyazo.com/5da30c0e61e4d822e1d9862a446a7d5e)
 
@@ -56,9 +65,15 @@ When uploading a workshop skin, you disconnect your internet, find the folder in
 
 Luckily, presents had an "unwrap" and "combine" option, which was good enough to use as the base item. After a bunch of code to have them behave as seperate items based on the skin ID, the "blueprint fragments" were back in the game.
 
-## Combatlog
+## Combat Log
 
 A SUPER simple plugin, that grabs the combatlog of a player based on steamID. Eventually the plugin will change the way combatlog works, by filtering hits on players, animals, building blocks, heli, etc. (Would only display player attacks, the rest are irrelivant 99% of the time)
+
+## Easy Chat Commands
+
+* [Oxide Listing](http://oxidemod.org/plugins/easychatcommands.2308/)
+
+Need to provide your players a link to your discord, teamspeak, website, etc, but don't want to bother coding? Just add the command and what text it should display when called to a config file, and you are good to go! (Simple Quality of Life utilities for server owners are surprisingly popular.
 
 ## Jake UI Framework
 
@@ -116,9 +131,10 @@ Example \#2:
         return new Vector2(itemDurabilityPanel.size.x, data.targetItem.conditionNormalized * data.targetItem.maxConditionNormalized * 1f);
     };
 
-## NoDespawning
+## No Despawning
 
-[Preview of the background magic](https://gyazo.com/e3de3eae60f72688d298fe165b6e2774)
+* [Oxide Listing](http://oxidemod.org/plugins/no-despawning.2467/)
+* [Screenshots](https://gyazo.com/e3de3eae60f72688d298fe165b6e2774)
 
 Could also be called "PersistantItems". A super cool plugin I wrote over a random weekend: it optimizes dropped items on a server, while also allowing them to stay around way longer. 
 
@@ -138,17 +154,18 @@ This had the side-effect of making it very difficult to crash a server by droppi
 
 [Non-stackable items stack on the ground as well, while preserving attachment, ammo, etc.](https://www.youtube.com/watch?v=uCsUEroNQ3o)
 
-## RecycleTweaks
+## Recycle Tweaks
 
 Another simple plugin that allows empty cans to be recycled. It was also going to take care of other items in the blueprint system like the old hazmat gear, but that was taken out before I had the chance to add it in.
 
-## ShorterNights
+## Shorter Nights
 
 This one was written by audi (i_love_code), it made night shorter while making it very hard for the player to tell we skipped it. It switches between equal daylight levels (22:00 -> 5:00). Unless the player watches the sky and sees the moon jump, they won't notice the "magic" as it happens. 
 
 ## Visual Debug
 
-[Preview](https://gyazo.com/0758809fb4e5d55bf32e48194571356a)
+* [Oxide Listing](http://oxidemod.org/plugins/visual-debug.2468/)
+* [Screenshots](https://gyazo.com/0758809fb4e5d55bf32e48194571356a)
 
 Allows you to look around at all the variables, and call functions inside any running plugin. Designed to be similar to Visual Studio's object explorer when debugging.
 
@@ -156,10 +173,18 @@ I am actually super proud of this plugin: it was my first real dive into reflect
 
 Was super useful to see what funky stuff was going on when our modded server was really laggy. Perhaps there was an edge case causing a dictionary not to be cleared, or you wanted to call a reset function, but couldn't reload the plugin to add a chat command.
 
+## Queue Holder
+
+* [Oxide Listing](http://oxidemod.org/plugins/queue-holder.2411/)
+
+There is nothing worst than your room-mate using the microwave on wipe day, cutting out your internet **just** long enough to be met with an 80 person queue! This plugin alliviates that problem: after disconnecting, you have a 5 minute grace perioid to rejoin safely, skipping the queue.
+
 ## Weapons On Back
 
-[Preview](https://gyazo.com/bdd1de1c0029f87df1c43a54a3bf0ca8)
+* [Oxide Listing](http://oxidemod.org/plugins/weapons-on-back.2188/)
+* [Screenshots](https://gyazo.com/bdd1de1c0029f87df1c43a54a3bf0ca8)
+* [Preview](https://gyazo.com/bdd1de1c0029f87df1c43a54a3bf0ca8)
 
-**The mod that inspired the feature in the main game!  (or so I hope!)**
+**The mod that inspired the feature in the main game!**
 
-My **first** popular mod, and the plugin reflects my humble beginnings. I was playing around and figured out that setting the parent of an entity would also bind it clientside. I mocked something up, and played around with rotations to get each weapon positioned correctly. I set the parent bone to "spine1", so they would move correctly as the player looked around. I settled on showing only the best weapon not currently equiped, as it was easy to determine best weapon, made sense logically when looking at players and was the hardest to abuse. It looked great once I got all the weapons in the right spot, and ended up on nearly every modded server. And then eventually every server! :)
+My **first** popular mod. I was playing around and figured out that setting the parent of an entity would also bind it clientside. I mocked something up, and played around with rotations to get each weapon positioned correctly. I set the parent bone to "spine1", so they would move correctly as the player looked around. I settled on showing only the best weapon not currently equiped, as it was easy to determine best weapon, made sense logically when looking at players and was the hardest to abuse. It looked great once I got all the weapons in the right spot, and ended up on nearly every modded server. And then eventually every server! :)
