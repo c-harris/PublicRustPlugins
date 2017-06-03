@@ -3,11 +3,12 @@
 1. [Anti Foundation Stack](#anti-foundation-stack)
 2. [Blueprints Revived](#blueprints-revived)
 3. [Combat Log](#combat-log)
-4. [Jake UI Framework](#jake-ui-framework)
-5. [No Despawning](#no-despawning)
-6. [Recycle Tweaks](#recycle-tweaks)
-7. [Visual Debug](#visual-debug)
-8. [Weapons On Back](#weapons-on-back)
+4. [Craft Queue Saver](#craft-queue-saver)
+5. [Jake UI Framework](#jake-ui-framework)
+6. [No Despawning](#no-despawning)
+7. [Recycle Tweaks](#recycle-tweaks)
+8. [Visual Debug](#visual-debug)
+9. [Weapons On Back](#weapons-on-back)
 
 # Plugins
 
@@ -68,6 +69,12 @@ Luckily, presents had an "unwrap" and "combine" option, which was good enough to
 ## Combat Log
 
 A SUPER simple plugin, that grabs the combatlog of a player based on steamID. Eventually the plugin will change the way combatlog works, by filtering hits on players, animals, building blocks, heli, etc. (Would only display player attacks, the rest are irrelivant 99% of the time)
+
+## Craft Queue Saver
+
+* [Oxide Listing](http://oxidemod.org/plugins/craft-queue-saver.2498/)
+
+Players love to afk craft tons of materials, and leave their computer running. The problem is when they disconnect: they drop their entire crafting queue likely losing their items, or when the server restarts their crafting queue is simply deleted. This plugin serializes their crafting queue, restoring it when they log back in. If they are killed while logged out, their crafting queue will be dropped, and when the server wipes it will clear everyone's crafting queue to prevent people keeping items over wipes.
 
 ## Easy Chat Commands
 
