@@ -1,4 +1,5 @@
 ﻿using Network;
+using Oxide.Game.Rust.Cui;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -25,110 +26,125 @@ namespace Oxide.Plugins
 
         Item localPlayerWeaponFuck;
         Timer _timer;
-        public static bool testing = false;
-        private Dictionary<Item, Magazine> magData { get; set; } = new Dictionary<Item, Magazine>(); //TODO: Remove when items are destroyed
+        public static bool testing = true;
+        public static Dictionary<Item, Magazine> magData { get; set; } = new Dictionary<Item, Magazine>(); //TODO: Remove when items are destroyed
+        public static Dictionary<BasePlayer, PlayerData> playerData { get; set; } = new Dictionary<BasePlayer, DayZMags.PlayerData>();
 
-        public Magazine GetMagazine(Item item)
+        public static PlayerData GetPlayerData(BasePlayer player)
         {
-            Magazine data;
-            if (!magData.TryGetValue(item, out data))
+            PlayerData data;
+            if (!playerData.TryGetValue(player, out data))
             {
-                data = new Magazine(item);
-                magData.Add(item, data);
+                data = new PlayerData(player);
+                playerData.Add(player, data);
             }
             return data;
         }
 
-        void TryReload(BasePlayer player, HeldEntity entity)
-        {
-            if (player.GetHeldEntity() != entity)
-            {
-                Puts("Not the same item!");
-                return;
-            }
-            Item item = player.inventory.AllItems().Where(x => IsMagazine(x)).OrderByDescending(x => x.amount).FirstOrDefault();
-            if (item == null)
-            {
-                Puts("No magazine in inventory!");
-                return;
-            }
-            var magazine = GetMagazine(item);
-            magazine.AddToWeapon(entity.GetItem());
-        }
+        //TODO: When loading large magazine, set capacity of gun to the size of the magazine (may be clientside)
 
-        public void LoadMagazine(Item weapon, Item magazine)
-        {
-            if (weapon.contents.itemList.Contains(magazine)) //Don't reload magazine if it's already in the gun
-            {
-                return;
-            }
-            TryUnloadMagazine(weapon);
-            BaseProjectile weaponEntity = weapon.GetHeldEntity() as BaseProjectile;
-            if (weaponEntity == null)
-            {
-                return;
-            }
-            weaponEntity.primaryMagazine.contents = magazine.amount;
-            magazine.SetParent(weapon.contents);
-            magazine.position = 0;
-            weapon.MarkDirty();
-            magazine.MarkDirty();
-            weaponEntity.SendNetworkUpdateImmediate();
-        }
-
-        public bool TryUnloadMagazine(Item weapon)
-        {
-            var weaponEntity = weapon.GetHeldEntity() as BaseProjectile;
-            if (weaponEntity == null)
-            {
-                Puts($"TryUnloadMagazine() not weapon!");
-                return false;
-            }
-            var magazine = weapon.contents.itemList.FirstOrDefault(x => IsMagazine(x));
-            if (magazine == null)
-            {
-                Puts($"TryUnloadMagazine() magazine is null!");
-                return false;
-            }
-            var player = weapon.GetOwnerPlayer();
-            if (player == null)
-            {
-                Puts($"TryUnloadMagazine() player is null!");
-                return false;
-            }
-            player.GiveItem(magazine);
-            weaponEntity.primaryMagazine.contents = 0;
-            weaponEntity.SendNetworkUpdateImmediate();
-            return true;
-        }
-
-        public void DragLoadMagazine(Item magazine, Item ammo)
-        {
-
-        }
-
-        #region Hooks
+        #region Save / Load hooks
 
         void Init()
         {
             _plugin = this;
         }
 
-        void OnPlayerInput(BasePlayer player, InputState input)
+        void OnServerInitialized()
         {
-            if (input.WasJustPressed(BUTTON.RELOAD))
+            AmmoSkinIDs = new HashSet<ulong>(AmmoDefinitions.Values.Select(x => x._skinID));
+            WrappedAmmoSkinIDs = new HashSet<ulong>(WrappedAmmoDefinitions.Values.Select(x => x._skinID));
+            MagazineSkinIDs = new HashSet<ulong>(MagazineDefinitions.Values.Select(x => x._skinID));
+            var batDef = ItemManager.itemList.First(x => x.shortname == "battery.small");
+            if (batDef.stackable == 1)
             {
-                localPlayerWeaponFuck = ItemManager.CreateByPartialName("ammo.rifle");
-                player.inventory.GiveItem(localPlayerWeaponFuck);
-                _timer?.Destroy();
+                batDef.stackable = 2;
             }
-            else if (input.WasJustReleased(BUTTON.RELOAD))
+            foreach (var weapon in GameObject.FindObjectsOfType<BaseProjectile>()) //Add custom component to all weapons
             {
-                localPlayerWeaponFuck.Remove();
-                localPlayerWeaponFuck.MarkDirty();
-                _timer = timer.In(5f, () => { TryReload(player, player.GetHeldEntity()); });
+                OnEntitySpawned(weapon);
+            }
+            
+            foreach (var player in GameObject.FindObjectsOfType<BasePlayer>()) //Add custom component to all weapons
+            {
+                OnItemInit(player?.inventory?.AllItems());
             }
 
+            foreach(var storage in GameObject.FindObjectsOfType<StorageContainer>())
+            {
+                OnItemInit(storage?.inventory?.itemList);
+            }
+
+        }
+
+        void Unload()
+        {
+            foreach (var weapon in GameObject.FindObjectsOfType<Weapon>()) //Remove components
+            {
+                GameObject.Destroy(weapon);
+            }
+            var batDef = ItemManager.itemList.First(x => x.shortname == "battery.small");
+            if (batDef.stackable == 2)
+            {
+                batDef.stackable = 1;
+            }
+        }
+
+        #endregion
+
+        #region Item hooks
+
+        void OnItemInit(IEnumerable<Item> items)
+        {
+            if (items == null)
+            {
+                Puts($"OnItemInit() items is null");
+                return;
+            }
+            foreach(var item in items)
+            {
+                OnItemInit(item);
+            }
+        }
+
+        void OnItemInit(Item item)
+        {
+            var held = item?.GetHeldEntity();
+            if (held == null)
+            {
+                return;
+            }
+            if (!(held is BaseProjectile))
+            {
+                return;
+            }
+            if (MagazineHelper.IsMagazine(item))
+            {
+                return;
+            }
+            if (held.GetComponent<Weapon>() == null)
+            {
+                held.gameObject.AddComponent<Weapon>();
+            }
+        }
+
+        #endregion
+
+        #region Inventory hooks
+
+        object GetMaxStackable(Item item)
+        {
+            Puts("GetMaxStackable");
+            if (item.skin == 0)
+            {
+                return null;
+            }
+            if (AmmoHelper.IsAmmo(item))
+            {
+                Puts($"IsAmmo with stacksize of {AmmoHelper.GetAmmoInfo(item.skin)._stackLimit}");
+                return AmmoHelper.GetAmmoInfo(item.skin)._stackLimit;
+            }
+            return null;
         }
 
         object CanMoveItem(Item movedItem, PlayerInventory playerLoot, uint targetContainerID, int targetSlot)
@@ -142,28 +158,47 @@ namespace Oxide.Plugins
             }
             Item targetItem = container.GetSlot(targetSlot);
 
-            #region Moving Magazines around without them unstacking
+            #region Dragging Magazines onto weapons
 
-            if (IsMagazine(movedItem))
+            if (MagazineHelper.IsMagazine(movedItem))
             {
-                Puts(movedItem.info.shortname);
-                if (movedItem.info.shortname == SHORTNAME_MODITEM)
+                if (MagazineHelper.IsMagazine(targetItem))
                 {
                     return null;
                 }
-                var magazine = GetMagazine(movedItem);
-                Puts("Is Magazine");
-                if (magazine.CanWeaponAccept(targetItem)) //Dragging magazine onto weapon
+                var weaponEntity = targetItem?.GetHeldEntity();
+                if (weaponEntity != null)
                 {
-                    Puts("Weapon Accepts moved magazine");
-                    magazine.AddToWeapon(targetItem);
+                    if (weaponEntity.GetComponent<Weapon>() == null)
+                    {
+                        weaponEntity.gameObject.AddComponent<Weapon>();
+                    }
                 }
-                else if (magazine.CanWeaponAccept(container.parent)) //Dragging magazine into modification slots
+                if (movedItem.info.shortname == SHORTNAME_MODITEM)
                 {
-                    Puts("Weapon Accepts moved magazine");
-                    magazine.AddToWeapon(container.parent);
+                    Puts($"IsMagazine() returned true for a MagazineModItem!");
                     return true;
                 }
+                var weapon = targetItem?.GetHeldEntity()?.GetComponent<Weapon>(); //Dragging magazine onto a weapon
+                var magazine = MagazineHelper.GetMagazine(movedItem);
+                if (weapon == null)
+                {
+                    weapon = container?.parent?.GetHeldEntity()?.GetComponent<Weapon>(); //Dragging a magazine into a weapons modification slots
+                }
+                if (weapon != null)
+                {
+                    weapon.AttachMagazine(magazine);
+                    return true;
+                }
+
+                if (targetItem == null) { _plugin.Puts("targetItem is null"); }
+                if (targetItem?.GetHeldEntity() == null) { _plugin.Puts("targetheld is null"); }
+                if (targetItem?.GetHeldEntity()?.GetComponentInParent<Weapon>() == null) { _plugin.Puts("Component is null"); }
+                if (targetItem == null) { _plugin.Puts(" is null"); }
+
+                Puts("Is Magazine");
+
+
                 /*else if (TryMoveToEmpty(container, movedItem, targetSlot)) //Dragging magazine into empty slots (not really needed)
                 {
                     return true;
@@ -186,10 +221,10 @@ namespace Oxide.Plugins
             #region Drag To Add Ammo to Magazine
             if (targetItem != null)
             {
-                if (IsMagazine(targetItem)) //Item being dragged to is a Magazine
+                if (MagazineHelper.IsMagazine(targetItem)) //Item being dragged to is a Magazine
                 {
-                    var magazine = GetMagazine(targetItem);
-                    if (IsAmmo(movedItem))
+                    var magazine = MagazineHelper.GetMagazine(targetItem);
+                    if (AmmoHelper.IsAmmo(movedItem))
                     {
                         magazine.TryDragLoad(movedItem);
                         return true;
@@ -201,7 +236,7 @@ namespace Oxide.Plugins
 
             #region Dragging Magazine out of weapon
 
-            if (IsModMagazineItem(movedItem))
+            if (MagazineHelper.IsModMagazineItem(movedItem))
             {
                 if (movedItem.contents == null)
                 {
@@ -213,23 +248,16 @@ namespace Oxide.Plugins
                     Puts("ModMagazineItem contents is empty!");
                     return true;
                 }
-                GetMagazine(movedItem.contents.itemList[0]).RemoveFromWeapon(movedItem.parent.parent);
+                MagazineHelper.GetMagazine(movedItem.contents.itemList[0]).RemoveFromWeapon(movedItem.parent.parent);
                 return true;
             }
 
             #endregion
 
-            return null;
-        }
+            #region Moving around unstackable items
 
-        //TODO: Add override if NoDespawning is loaded (add support to NoDespawning to override pickup single)
-        object OnItemPickup(Item item, BasePlayer player)
-        {
-            if (IsMagazine(item))
-            {
-                player.GiveItem(item);
-                return true;
-            }
+            #endregion
+
             return null;
         }
 
@@ -249,7 +277,7 @@ namespace Oxide.Plugins
         //TODO: Give weapon magazines (in loot, when crafting items)
         void OnItemRemovedFromContainer(ItemContainer container, Item item)
         {
-            if (!IsMagazine(item))
+            if (!MagazineHelper.IsMagazine(item))
             {
                 //Puts($"OnItemRemoved() not magazine!");
                 return;
@@ -271,45 +299,168 @@ namespace Oxide.Plugins
 
         object OnItemAction(Item item, string action)
         {
-            if (action != "unload_ammo")
+            switch (action)
+            {
+                #region Unloading Ammo from magazines, and magazines from guns
+                case "unload_ammo":
+                    {
+                        if (MagazineHelper.IsMagazine(item))
+                        {
+                            MagazineHelper.GetMagazine(item).Unload();
+                            return true;
+                        }
+                        var weapon = item.GetHeldEntity().GetComponent<Weapon>();
+                        if (weapon.HasLoadedMagazine()) //TODO: Move to Weapon class (Unloading weapon's magazine based on mod item)
+                        {
+                            weapon.DetachMagazine();
+                            return true;
+                        }
+                        break;
+                    }
+                #endregion
+
+                case "unwrap":
+                    {
+                        if (!AmmoHelper.IsWrappedAmmo(item))
+                        {
+                            return null;
+                        }
+                        var player = item.GetOwnerPlayer();
+                        if (player == null)
+                        {
+                            return true;
+                        }
+                        var info = AmmoHelper.GetWrappedAmmoInfo(item);
+                        item.UseItem();
+                        player.GiveItem(AmmoHelper.CreateAmmo(info._ammo, info._unwrapAmount));
+                        return true;
+                    }
+
+            }
+            return null;
+        }
+
+        object CanStackItem(Item item1, Item item2)
+        {
+            Puts($"CanStack()");
+            if (item1.skin == 0 || item2.skin == 0)
             {
                 return null;
             }
-            if (IsMagazine(item))
+            if (item1.skin != item2.skin)
             {
-                GetMagazine(item).Unload();
-                return true;
+                return null;
             }
-            if (HasMagazine(item))
+            if (AmmoHelper.IsAmmo(item1) && AmmoHelper.IsAmmo(item2))
             {
-                //TODO: Cleanup solution
-                magData.First(x => x.Value.IsModItem(item.contents.itemList[0])).Value.RemoveFromWeapon(item);
-                //GetMagazine(item).RemoveFromWeapon();
+                Puts("CanStack() both are ammo!");
                 return true;
             }
             return null;
         }
 
-        void OnWeaponFired(BaseProjectile weapon, BasePlayer player, ItemModProjectile mod, ProtoBuf.ProjectileShoot projectiles)
+        object CanAcceptItem(ItemContainer container, Item item) //Prevent magazines (eoka) going into hotbar
         {
-            var weaponItem = weapon.GetItem();
-            if (weaponItem == null)
+            if (MagazineHelper.IsMagazine(item))
             {
-                Puts("OnWeaponFired() weapon = null!");
-                return;
+                var player = item?.parent?.GetOwnerPlayer();
+                if (player == null)
+                {
+                    return null;
+                }
+                if (container == player.inventory.containerBelt)
+                {
+                    return ItemContainer.CanAcceptResult.CannotAccept;
+                }
             }
-            if (!HasMagazine(weaponItem)) //Remove this if you add more features below
-            {
-                Puts("OnWeaponFired() weapon doesnt have magazine!");
-                return;
-            }
-            var magazine = GetWeaponMagazine(weaponItem);
-            magazine.UseAmmo();
+            return null;
         }
 
         #endregion
 
-        #region Inventory Helpers
+        #region Entity hooks
+
+        void OnEntitySpawned(BaseNetworkable entity)
+        {
+            var projectile = entity as BaseProjectile;
+            if (projectile != null)
+            {
+                if (!MagazineHelper.IsMagazine(projectile))
+                {
+                    return;
+                }
+                if (projectile.GetComponent<Weapon>() != null)
+                {
+                    return;
+                }
+                projectile.gameObject.AddComponent<Weapon>();
+                Puts($"Added weapon component");
+            }
+        }
+
+        #endregion
+
+        #region Reload hooks (PlayerInput too)
+
+        void OnPlayerInput(BasePlayer player, InputState input)
+        {
+            if (input.WasJustPressed(BUTTON.RELOAD))
+            {
+                GetPlayerData(player).OnReloadButtonDown();
+            }
+            else if (input.WasJustReleased(BUTTON.RELOAD))
+            {
+                GetPlayerData(player).OnReloadButtonUp();
+            }
+
+        }
+
+        object OnStartReload(BasePlayer player, BaseProjectile weapon)
+        {
+            Puts($"OnStartReload");
+            GetPlayerData(player).OnReloadStart(weapon);
+            return null;
+        }
+
+        object OnReloadMagazine(BasePlayer player, BaseProjectile weapon)
+        {
+            Puts($"OnReloadMagazine");
+            GetPlayerData(player).OnReloadEnd(weapon);
+            weapon.SendNetworkUpdateImmediate(false);
+            global::ItemManager.DoRemoves();
+            player.inventory.ServerUpdate(0f);
+            return true;
+        }
+
+        #endregion
+
+        #region Pickup Items
+
+        //TODO: Add override if NoDespawning is loaded (add support to NoDespawning to override pickup single)
+        object OnItemPickup(Item item, BasePlayer player)
+        {
+            if (MagazineHelper.IsMagazine(item))
+            {
+                player.GiveItem(item);
+                return true;
+            }
+            return null;
+        }
+
+        #endregion
+
+        #region Other hooks
+
+        void OnWeaponFired(BaseProjectile baseProjectile, BasePlayer player, ItemModProjectile mod, ProtoBuf.ProjectileShoot projectiles)
+        {
+            var weapon = baseProjectile.GetComponent<Weapon>();
+            weapon.OnWeaponFired();
+        }
+
+        #endregion
+
+        //TODO: Remove
+        #region Inventory Helpers (not needed, will remove later)
 
         public void SwapPosition(Item item1, Item item2)
         {
@@ -351,91 +502,180 @@ namespace Oxide.Plugins
 
         #endregion
 
-        #region Magazine Helpers
+        #region Debug Messages
 
-        public bool HasMagazine(Item item)
+        public static void Error(string error)
         {
-            var weapon = item.GetHeldEntity() as BaseProjectile;
-            if (weapon == null)
+            if (testing)
             {
-                return false;
+                _plugin.Puts($"Error: {error}");
             }
-            if (item.contents == null)
-            {
-                return false;
-            }
-            return item.contents.itemList.Any(x => IsModMagazineItem(x));
-        }
-
-        public Magazine GetWeaponMagazine(Item weapon)
-        {
-            return GetMagazine(weapon.contents.itemList.FirstOrDefault(x => x.contents != null && IsMagazine(x.contents.itemList[0])));
-        }
-
-        public bool IsModMagazineItem(Item item)
-        {
-            if (item == null)
-            {
-                return false;
-            }
-            return item.info.shortname == SHORTNAME_MODITEM;
-        }
-
-        public bool IsMagazine(Item item)
-        {
-            if (item == null)
-            {
-                return false;
-            }
-            if (item.info.shortname != SHORTNAME_MAGAZINE)
-            {
-                return false;
-            }
-            return MagazineDefinitions.ContainsKey(item.skin);
-        }
-
-        public bool IsMagazine(ulong skinID)
-        {
-            return MagazineDefinitions.ContainsKey(skinID);
-        }
-
-        public bool IsMagazine(HeldEntity entity)
-        {
-            if (entity == null)
-            {
-                return false;
-            }
-            Item item = entity.GetItem();
-            if (item == null)
-            {
-                return false;
-            }
-            return IsMagazine(item);
-        }
-
-        public bool IsAmmo(Item item)
-        {
-            //Keep as simple check for ammo type, to allow dragging ammo to magazines not move the magazine
-            return item.info.name.Contains("ammo");
-        }
-
-        public bool IsWeaponType(string name)
-        {
-            switch (name)
-            {
-
-            }
-            return true;
         }
 
         #endregion
 
-        public MagazineInfo GetMagazineInfo(Item item)
+        #region Classes
+
+        public class PlayerData
         {
-            return MagazineDefinitions[item.skin];
+            private BasePlayer _player { get; set; }
+            private Item _fakeAmmo { get; set; }
+            private bool _reloadStarted { get; set; }
+            private bool _reloadFinished { get; set; }
+            private BaseProjectile _reloadWeapon { get; set; }
+
+
+            public PlayerData(BasePlayer player)
+            {
+                _player = player;
+            }
+
+            public void OnReloadButtonDown()
+            {
+                if (!HasMagazine())
+                {
+                    return;
+                }
+                var weaponInfo = GetWeapon().GetDefinition();
+                var magazine = GetBestMagazine(weaponInfo.GetWeaponType());
+                if (magazine == null)
+                {
+                    Error($"OnReloadButtonDown() magzine is null");
+                    return;
+                }
+                CreateFakeAmmo(magazine); //TODO: Only create fake ammo if a valid magazine is in the player's inventory (based on players weapon)
+            }
+
+            public void OnReloadButtonUp()
+            {
+                RemoveFakeAmmo();
+            }
+
+            public void OnReloadStart(BaseProjectile weapon)
+            {
+                _reloadFinished = false;
+                RemoveFakeAmmo();
+                //this.StartReloadCooldown(this.reloadTime);
+
+                //TODO: Eject magazine (only in hardcore mode)
+
+                _reloadWeapon = weapon;
+                _reloadStarted = true;
+            }
+
+            public void OnReloadEnd(BaseProjectile weaponEntity)
+            {
+                if (weaponEntity != _reloadWeapon)
+                {
+                    _plugin.Puts($"OnReloadEnd reload weapon doesnt equal current weapon");
+                    CancelReload();
+                    return;
+                }
+                if (!_reloadStarted)
+                {
+                    _plugin.Puts($"OnReloadEnd reload not started");
+                    CancelReload();
+                    return;
+                }
+                var weapon = weaponEntity.GetComponent<Weapon>();
+                var mag = GetBestMagazine(weapon.GetWeaponType());
+                if (mag == null)
+                {
+                    _plugin.Puts($"OnReloadEnd not valid magazines!");
+                    return;
+                }
+                //Do reload here
+
+                weapon.AttachMagazine(mag);
+                _reloadWeapon = null;
+            }
+
+            public void OnSwitchWeapons()
+            {
+                RemoveFakeAmmo();
+                CancelReload();
+            }
+
+            private void CancelReload()
+            {
+                RemoveFakeAmmo(); //Just to be safe
+
+            }
+
+            private void RemoveFakeAmmo()
+            {
+                if (_fakeAmmo == null)
+                {
+                    return;
+                }
+                _fakeAmmo.Remove();
+                ItemManager.DoRemoves();
+            }
+
+            private void CreateFakeAmmo(Magazine magazine)
+            {
+                _fakeAmmo = AmmoHelper.CreateTempAmmo(magazine.GetLoadedAmmoType());
+                if (_fakeAmmo == null)
+                {
+                    Error($"CreateFakeAmmo() _fakeAmmo null");
+                }
+                _player.inventory.GiveItem(_fakeAmmo);
+            }
+
+            public bool HasMagazine()
+            {
+                return _player.inventory.AllItems().Any(x => MagazineHelper.IsMagazine(x));
+            }
+
+            public bool HasMagazine(WeaponType weapon)
+            {
+                return _player.inventory.AllItems().Any(x => MagazineHelper.IsMagazine(x, weapon));
+            }
+
+            public Magazine GetBestMagazine(WeaponType weapon)
+            {
+                //TODO: Holy fucked up LINQ batman!
+                return MagazineHelper.GetMagazine(_player.inventory.AllItems().Where(x => MagazineHelper.IsMagazine(x, weapon)).OrderByDescending(x => MagazineHelper.GetMagazineInfo(x)._capacity).First());
+            }
+
+            public bool HasWeapon()
+            {
+                return _player.GetHeldEntity() is BaseProjectile;
+            }
+
+            public Weapon GetWeapon()
+            {
+                return (_player.GetHeldEntity() as BaseProjectile).GetComponent<Weapon>();
+            }
+
         }
 
-        #region Classes
+        public class WeaponInfo
+        {
+            private HashSet<AmmoType> _allowedAmmo { get; set; }
+            public WeaponType _type { get; set; }
+
+            public WeaponInfo(WeaponType type, params AmmoType[] ammo)
+            {
+                _allowedAmmo = new HashSet<AmmoType>(ammo);
+                _type = type;
+            }
+
+            public bool AcceptsAmmo(AmmoType ammo)
+            {
+                return _allowedAmmo.Contains(ammo);
+            }
+
+            public bool AcceptsAmmo(Item item)
+            {
+                return AcceptsAmmo(AmmoHelper.GetAmmoInfo(item)._ammoType);
+            }
+
+            public WeaponType GetWeaponType()
+            {
+                return _type;
+            }
+        }
 
         public class MagazineInfo
         {
@@ -457,6 +697,60 @@ namespace Oxide.Plugins
                 _amountPerReload = reloadAmount;
                 _timePerReload = timePerReload;
             }
+
+            public bool WeaponAccepts(WeaponType type)
+            {
+                return allowedWeapons.Contains(type);
+            }
+        }
+
+        public class WrappedAmmoInfo
+        {
+            public AmmoType _ammo { get; set; }
+            public string _name { get; set; }
+            public ulong _skinID { get; set; }
+            public int _stackLimit { get; set; }
+            public int _unwrapAmount { get; set; }
+
+            public WrappedAmmoInfo(ulong skinID, string name, int unwrapAmount, AmmoType ammo, int stackLimit)
+            {
+                _skinID = skinID;
+                _name = name;
+                _unwrapAmount = unwrapAmount;
+                _stackLimit = stackLimit;
+                _ammo = ammo;
+            }
+        }
+
+        public class AmmoInfo
+        {
+            public string _name;
+            public ulong _skinID;
+            public int _stackLimit;
+            public string _shortname;
+            public AmmoType _ammoType { get; set; }
+
+            public AmmoInfo(ulong skinID, string name, string shortname, int stackLimit, AmmoType ammoType)
+            {
+                _skinID = skinID;
+                _name = name;
+                _shortname = shortname;
+                _stackLimit = stackLimit;
+                _ammoType = ammoType;
+            }
+
+            public Item CreateItem(int amount)
+            {
+                Item item = ItemManager.CreateByPartialName("battery.small", amount);
+                item.skin = _skinID;
+                item.name = _name;
+                return item;
+            }
+
+            public Item CreateFakeAmmo()
+            {
+                return ItemManager.CreateByPartialName(_shortname, 1);
+            }
         }
 
         public class Magazine
@@ -469,13 +763,33 @@ namespace Oxide.Plugins
             Timer _timer { get; set; }
             private int _bullets { get; set; }
             private ItemDefinition _bulletDefinition { get; set; } = ItemManager.FindItemDefinition("ammo.shotgun");
+            private AmmoType _loadedAmmoType { get; set; }
 
             public Magazine(Item item)
             {
                 _mag = item;
                 _magazineEntity = item.GetHeldEntity() as BaseProjectile;
+                if (_magazineEntity == null)
+                {
+                    _plugin.Puts($"Magazine Entity is null");
+                }
                 _definition = _plugin.GetDefinition(item.skin);
                 _bullets = _magazineEntity.primaryMagazine.contents;
+            }
+
+            public AmmoType GetAmmoType()
+            {
+                return _definition._allowedAmmo;
+            }
+
+            public AmmoType GetLoadedAmmoType()
+            {
+                return GetAmmoType();
+            }
+
+            public MagazineInfo GetDefinition()
+            {
+                return _definition;
             }
 
             public bool IsModItem(Item item)
@@ -517,7 +831,7 @@ namespace Oxide.Plugins
                 {
                     return;
                 }
-                _bullets = Mathf.Max(0, _bullets--);
+                _bullets = Mathf.Max(0, --_bullets);
                 UpdateAmmoCount();
             }
 
@@ -529,7 +843,7 @@ namespace Oxide.Plugins
                     _plugin.Puts($"Magazine.Unload() null player!");
                     return;
                 }
-                player.GiveItem(ItemManager.Create(_bulletDefinition, _bullets)); //TODO: Change this to handle overriden bullet types
+                player.GiveItem(AmmoHelper.CreateAmmo(_definition._allowedAmmo, _bullets)); //TODO: Change this to handle overriden bullet types and use loadedammotype
                 _bullets = 0;
                 UpdateAmmoCount();
             }
@@ -537,6 +851,10 @@ namespace Oxide.Plugins
             public void FillAmmo(Item ammo)
             {
                 int amount = _definition._amountPerReload;
+                if (testing)
+                {
+                    amount = _definition._capacity;
+                }
                 if (_bullets >= _definition._capacity)
                 {
                     return;
@@ -559,11 +877,13 @@ namespace Oxide.Plugins
 
             private void UpdateAmmoCount()
             {
+                _plugin.Puts($"UpdateAmmoCount");
                 _magazineEntity.primaryMagazine.contents = _bullets;
                 _magazineEntity.SendNetworkUpdateImmediate();
                 _mag.MarkDirty();
                 if (_modItem != null)
                 {
+                    _plugin.Puts($"Mod item IS NOT null, {_bullets} bullets left");
                     _modItem.amount = _bullets;
                     _modItem.MarkDirty();
                 }
@@ -577,10 +897,15 @@ namespace Oxide.Plugins
                     return false;
                 }
                 WeaponType type;
-                if (!_plugin.weaponAssignments.TryGetValue(weapon.info.shortname, out type))
+                if (!weaponAssignments.TryGetValue(weapon.info.shortname, out type))
                 {
                     return false;
                 }
+                return _definition.allowedWeapons.Contains(type);
+            }
+
+            public bool CanWeaponAccept(WeaponType type)
+            {
                 return _definition.allowedWeapons.Contains(type);
             }
 
@@ -589,14 +914,31 @@ namespace Oxide.Plugins
                 BaseProjectile weaponEntity = weapon.GetHeldEntity() as BaseProjectile;
                 weaponEntity.primaryMagazine.contents = 0;
                 _modItem.RemoveFromContainer();
+                var container = weaponEntity.GetOwnerPlayer().inventory.containerMain;
                 weaponEntity.GetOwnerPlayer().GiveItem(_mag);
-                _mag.MarkDirty();
-                _mag.GetHeldEntity().SendNetworkUpdate();
+                
+                /*if (!_mag.MoveToContainer(container)) //??????? Wasn't working original way, changed to this and it didn't work, changed to original now it works
+                {
+                    _plugin.Puts($"Failed to move into container {container == null}");
+                    _mag.Drop(container.dropPosition, container.dropVelocity);
+                }*/
+                //weaponEntity.GetOwnerPlayer().GiveItem(_mag);
                 weaponEntity.SendNetworkUpdateImmediate();
+                _mag.MarkDirty();
+                _mag.GetHeldEntity().SendNetworkUpdateImmediate();
+            }
+
+            public void MoveToPlayerInventory()
+            {
+
             }
 
             public void TryDragLoad(Item draggedItem)
             {
+                if (AmmoHelper.GetAmmoInfo(draggedItem.skin)._ammoType != _definition._allowedAmmo)
+                {
+                    return;
+                }
                 if (HasCooldown())
                 {
                     _plugin.Puts("Drag reload has cooldown!");
@@ -612,22 +954,18 @@ namespace Oxide.Plugins
                 StartCooldown();
             }
 
-            public void AddToWeapon(Item weapon)
+            public void AddToWeapon(Item weaponItem)
             {
-                if (weapon == null)
+                if (weaponItem == null)
                 {
                     return;
                 }
-                if (_mag?.parent?.parent == weapon) //Don't reload magazine if it's already in the gun
+                if (_mag?.parent?.parent == weaponItem) //Don't reload magazine if it's already in the gun
                 {
                     return;
                 }
-                if (_plugin.HasMagazine(weapon))
-                {
-                    _plugin.GetWeaponMagazine(weapon).RemoveFromWeapon(weapon);
-                    //unload weapon
-                }
-                BaseProjectile weaponEntity = weapon.GetHeldEntity() as BaseProjectile;
+                var weapon = weaponItem.GetHeldEntity().GetComponent<Weapon>();
+                BaseProjectile weaponEntity = weaponItem.GetHeldEntity() as BaseProjectile;
                 if (weaponEntity == null)
                 {
                     return;
@@ -636,11 +974,17 @@ namespace Oxide.Plugins
                 SetupModItem(weaponEntity);
             }
 
+            public void SetModMagItem(Item item)
+            {
+                _modItem = item;
+            }
+
             #region Drag-Reload cooldown
 
             private void StartCooldown()
             {
                 _timer?.Destroy();
+                _mag.condition = 2;
                 _timer = _plugin.timer.Every(DRAG_RELOAD_UPDATE, CooldownTick);
             }
 
@@ -651,15 +995,18 @@ namespace Oxide.Plugins
 
             private void StopCooldown()
             {
-                _timer.Destroy();
+                _timer?.Destroy();
                 _mag.condition = 1;
             }
 
             private void CooldownTick()
             {
+                if (!HasCooldown())
+                {
+                    return;
+                }
                 _mag.conditionNormalized += DRAG_RELOAD_UPDATE / _definition._timePerReload;
                 //_plugin.Puts($"Update: Mag condition is {_mag.conditionNormalized} ({_mag.condition}/{_mag.maxCondition}) ({DRAG_RELOAD_UPDATE * _definition._timePerReload * _mag.info.condition.max})");
-                UpdateAmmoCount();
                 if (_mag.conditionNormalized >= 1)
                 {
                     StopCooldown();
@@ -673,20 +1020,25 @@ namespace Oxide.Plugins
         {
             private Magazine _mag { get; set; }
             private BaseProjectile _entity { get; set; }
+            private WeaponType _type { get { return _definition._type; } }
+            private WeaponInfo _definition { get; set; }
 
             private void Awake()
             {
                 _entity = GetComponent<BaseProjectile>();
-                var magItem = _entity.GetItem().contents.itemList.FirstOrDefault(x => _plugin.IsModMagazineItem(x));
+                _definition = WeaponHelper.GetWeaponInfo(_entity);
+                var magItem = _entity.GetItem()?.contents?.itemList?.FirstOrDefault(x => MagazineHelper.IsModMagazineItem(x));
                 if (magItem == null)
                 {
                     return;
                 }
-                _mag = _plugin.GetMagazine(magItem.contents.itemList[0]);
+                _mag = MagazineHelper.GetMagazine(magItem.contents.itemList[0]);
+                _mag.SetModMagItem(_entity.GetItem().contents.itemList[0]);
             }
 
             public void OnWeaponFired()
             {
+                _plugin.Puts($"Weapon OnWeaponFired()");
                 _mag.UseAmmo();
             }
 
@@ -697,6 +1049,10 @@ namespace Oxide.Plugins
 
             public void AttachMagazine(Magazine mag)
             {
+                if (_mag != null)
+                {
+                    DetachMagazine();
+                }
                 _mag = mag;
                 _mag.AddToWeapon(_entity.GetItem());
             }
@@ -704,11 +1060,185 @@ namespace Oxide.Plugins
             public void DetachMagazine()
             {
                 _mag.RemoveFromWeapon(_entity.GetItem());
+                _mag = null;
+            }
+
+            public WeaponType GetWeaponType()
+            {
+                return _type;
+            }
+
+            public bool HasLoadedMagazine()
+            {
+                return _mag != null;
+            }
+
+            public WeaponInfo GetDefinition()
+            {
+                return _definition;
+            }
+        }
+
+        #endregion
+
+        #region Static classes
+
+        public static class WeaponHelper
+        {
+            public static WeaponInfo GetWeaponInfo(BaseProjectile weapon)
+            {
+                return GetWeaponInfo(weapon.GetItem());
+            }
+
+            public static WeaponInfo GetWeaponInfo(Item item)
+            {
+                return WeaponDefinitions[item.info.shortname];
+            }
+        }
+
+        public static class AmmoHelper
+        {
+            public static Item CreateAmmo(AmmoType ammo, int amount)
+            {
+                var info = GetAmmoInfo(ammo);
+                return info.CreateItem(amount);
+            }
+
+            public static Item CreateTempAmmo(AmmoType ammo)
+            {
+                _plugin.Puts($"CreateTempAmmo type {ammo} {GetAmmoInfo(ammo)._shortname}");
+                return ItemManager.CreateByName(GetAmmoInfo(ammo)._shortname, 1);
+            }
+
+            public static bool IsWrappedAmmo(Item item)
+            {
+                return WrappedAmmoDefinitions.ContainsKey(item.skin);
+            }
+
+            public static bool IsWrappedAmmo(ulong skinID)
+            {
+                return WrappedAmmoDefinitions.ContainsKey(skinID);
+            }
+
+            public static bool IsAmmo(Item item)
+            {
+                //Keep as simple check for ammo type, to allow dragging ammo to magazines not move the magazine
+                return AmmoSkinIDs.Contains(item.skin);
+            }
+
+            public static WrappedAmmoInfo GetWrappedAmmoInfo(Item item)
+            {
+                return WrappedAmmoDefinitions[item.skin];
+            }
+
+            public static AmmoInfo GetAmmoInfo(AmmoType ammo)
+            {
+                return AmmoDefinitions.Values.FirstOrDefault(x => x._ammoType == ammo);
+            }
+
+            public static AmmoInfo GetAmmoInfo(ulong skinID)
+            {
+                return AmmoDefinitions[skinID];
+            }
+
+            public static AmmoInfo GetAmmoInfo(Item item)
+            {
+                return AmmoDefinitions[item.skin];
             }
 
         }
 
+        public static class MagazineHelper
+        {
+            public static MagazineInfo GetMagazineInfo(Item item)
+            {
+                return MagazineDefinitions[item.skin];
+            }
+
+            public static bool IsModMagazineItem(Item item)
+            {
+                if (item == null)
+                {
+                    return false;
+                }
+                return item.info.shortname == SHORTNAME_MODITEM && IsMagazineSkin(item.skin);
+            }
+
+            public static bool IsMagazine(Item item)
+            {
+                if (item == null)
+                {
+                    return false;
+                }
+                if (item.info.shortname != SHORTNAME_MAGAZINE)
+                {
+                    return false;
+                }
+                return MagazineDefinitions.ContainsKey(item.skin);
+            }
+
+            public static bool IsMagazine(Item item, WeaponType weaponType)
+            {
+                if (item == null)
+                {
+                    return false;
+                }
+                if (item.info.shortname != SHORTNAME_MAGAZINE)
+                {
+                    return false;
+                }
+                MagazineInfo info;
+                if (!MagazineDefinitions.TryGetValue(item.skin, out info))
+                {
+                    return false;
+                }
+                return info.WeaponAccepts(weaponType);
+            }
+
+            public static bool IsMagazineSkin(ulong skinID)
+            {
+                return MagazineDefinitions.ContainsKey(skinID);
+            }
+
+            public static bool IsMagazine(HeldEntity entity)
+            {
+                if (entity == null)
+                {
+                    return false;
+                }
+                Item item = entity.GetItem();
+                if (item == null)
+                {
+                    return false;
+                }
+                return IsMagazine(item);
+            }
+
+            public static Magazine GetMagazine(Item item)
+            {
+                if (item == null)
+                {
+                    return null;
+                }
+                Magazine data;
+                if (!magData.TryGetValue(item, out data))
+                {
+                    data = new Magazine(item);
+                    magData.Add(item, data);
+                }
+                return data;
+            }
+        }
+
+        public static class PlayerHelper //Not used yet
+        {
+
+        }
         #endregion
+
+        public static HashSet<ulong> AmmoSkinIDs;
+        public static HashSet<ulong> WrappedAmmoSkinIDs;
+        public static HashSet<ulong> MagazineSkinIDs;
 
         #region Config values
 
@@ -720,6 +1250,20 @@ namespace Oxide.Plugins
             LR300 = 3,
             M249 = 4,
             PumpShotgun = 5,
+            Thompson = 6,
+            CustomSMG = 7,
+            MP5 = 8,
+            BoltAction = 9,
+            Semi_Pistol = 10,
+            Waterpipe = 11,
+            Revolver = 12,
+            Python = 13,
+            M92Pistol = 14,
+            FlameThrower = 15,
+            DoubleBarrel = 16,
+            Crossbow = 17,
+            Bow = 18,
+            RocketLauncher = 19,
         }
 
         public enum AmmoType
@@ -728,26 +1272,51 @@ namespace Oxide.Plugins
             Ammo_Rifle = 1,
             Ammo_Pistol = 2,
             Ammo_Slug = 3,
-            Ammo_Buck = 4,
+            Ammo_Buckshot = 4,
             Ammo_HandmadeShell = 5,
             Ammo_Arrow = 6,
         }
 
-        public Dictionary<ulong, MagazineInfo> MagazineDefinitions = new Dictionary<ulong, MagazineInfo>()
+        private static Dictionary<ulong, MagazineInfo> MagazineDefinitions = new Dictionary<ulong, MagazineInfo>()
         {
             {939979493u, new MagazineInfo(939979493u, "STANAG Magazine", 30, AmmoType.Ammo_Rifle, 3, 0.6f, WeaponType.Ak47, WeaponType.LR300, WeaponType.M249, WeaponType.Semi_Rifle) },
-            {940561694u, new MagazineInfo(940561694u, "75Rnd DrumMag", 75, AmmoType.Ammo_Rifle, 3, 1.0f, WeaponType.Ak47, WeaponType.LR300, WeaponType.M249, WeaponType.Semi_Rifle) },
-            {941402580u, new MagazineInfo(941402580u, "5Rnd Shotgun", 5, AmmoType.Ammo_Buck, 1, 1.0f, WeaponType.PumpShotgun)},
-            {941400934u, new MagazineInfo(941400934u, "8Rnd Shotgun", 8, AmmoType.Ammo_Buck, 1, 1.2f, WeaponType.PumpShotgun)},
-            {941405262u, new MagazineInfo(941405262u, "20Rnd Shotgun", 20, AmmoType.Ammo_Buck, 1, 2f, WeaponType.PumpShotgun)},
+            {940561694u, new MagazineInfo(940561694u, "75Rnd DrumMag", 75, AmmoType.Ammo_Rifle, 3, 1.0f, WeaponType.Ak47) },
+            {941402580u, new MagazineInfo(941402580u, "5Rnd Shotgun", 5, AmmoType.Ammo_Buckshot, 1, 1.0f, WeaponType.PumpShotgun)},
+            {941400934u, new MagazineInfo(941400934u, "8Rnd Shotgun", 8, AmmoType.Ammo_Buckshot, 1, 1.2f, WeaponType.PumpShotgun)},
+            {941405262u, new MagazineInfo(941405262u, "20Rnd Shotgun", 20, AmmoType.Ammo_Buckshot, 1, 2f, WeaponType.PumpShotgun)},
             {941865444u, new MagazineInfo(941865444u, "10Rnd CMAG", 10, AmmoType.Ammo_Rifle, 2, 0.4f, WeaponType.Ak47, WeaponType.LR300, WeaponType.M249, WeaponType.Semi_Rifle) },
             {941868420u, new MagazineInfo(941868420u, "20Rnd CMAG", 20, AmmoType.Ammo_Rifle, 2, 0.6f, WeaponType.Ak47, WeaponType.LR300, WeaponType.M249, WeaponType.Semi_Rifle) },
             {941869375u, new MagazineInfo(941869375u, "30Rnd CMAG", 30, AmmoType.Ammo_Rifle, 2, 0.8f, WeaponType.Ak47, WeaponType.LR300, WeaponType.M249, WeaponType.Semi_Rifle) },
             {941871543u, new MagazineInfo(941871543u, "40Rnd CMAG", 40, AmmoType.Ammo_Rifle, 2, 1.0f, WeaponType.Ak47, WeaponType.LR300, WeaponType.M249, WeaponType.Semi_Rifle) },
-            {941873168u, new MagazineInfo(941873168u, "100Rnd CMAG", 100, AmmoType.Ammo_Rifle, 3, 2.0f, WeaponType.Ak47, WeaponType.LR300, WeaponType.M249, WeaponType.Semi_Rifle) },
+            {941873168u, new MagazineInfo(941873168u, "100Rnd CMAG", 100, AmmoType.Ammo_Rifle, 3, 2.0f, WeaponType.LR300, WeaponType.M249) },
         };
 
-        public Dictionary<string, WeaponType> weaponAssignments = new Dictionary<string, WeaponType>()
+        private static Dictionary<ulong, WrappedAmmoInfo> WrappedAmmoDefinitions = new Dictionary<ulong, WrappedAmmoInfo>()
+        {
+            {942695934u, new WrappedAmmoInfo(942695934u, "Wrapped 12 Gauge Ammo", 12, AmmoType.Ammo_Buckshot, 10) },
+            {943400587u, new WrappedAmmoInfo(943400587u, "Wrapped 9mm Ammo", 30, AmmoType.Ammo_Pistol, 10) },
+            {943401516u, new WrappedAmmoInfo(943401516u, "Wrapped 5.56 Ammo", 30, AmmoType.Ammo_Rifle, 10) },
+        };
+
+        private static Dictionary<ulong, AmmoInfo> AmmoDefinitions = new Dictionary<ulong, AmmoInfo>()
+        {
+            {942706838u, new AmmoInfo(942706838u, "Buckshot", "ammo.shotgun", 32, AmmoType.Ammo_Buckshot) },
+            {942708393u, new AmmoInfo(942708393u, "5.56 Rifle Ammo", "ammo.rifle", 120, AmmoType.Ammo_Rifle) },
+            {943402758u, new AmmoInfo(943402758u, "9mm Pistol Ammo", "ammo.pistol", 100, AmmoType.Ammo_Pistol) },
+        };
+
+        private static Dictionary<string, WeaponInfo> WeaponDefinitions = new Dictionary<string, WeaponInfo>()
+        {
+            { "rifle.ak", new WeaponInfo(WeaponType.Ak47, AmmoType.Ammo_Rifle) },
+            { "rifle.lr300", new WeaponInfo(WeaponType.LR300,  AmmoType.Ammo_Rifle) },
+            { "rifle.bolt", new WeaponInfo(WeaponType.BoltAction, AmmoType.Ammo_Rifle) },
+            { "rifle.semimauto", new WeaponInfo(WeaponType.Semi_Rifle, AmmoType.Ammo_Rifle) },
+            { "msg.m249", new WeaponInfo(WeaponType.M249, AmmoType.Ammo_Rifle) },
+            { "shotgun.pump", new WeaponInfo(WeaponType.PumpShotgun, AmmoType.Ammo_Buckshot) },
+            { "shotgun.double", new WeaponInfo(WeaponType.DoubleBarrel, AmmoType.Ammo_Buckshot) },
+        };
+
+        private static Dictionary<string, WeaponType> weaponAssignments = new Dictionary<string, WeaponType>()
         {
             {"rifle.semiauto", WeaponType.Semi_Rifle},
             {"rifle.ak", WeaponType.Ak47},
@@ -765,7 +1334,7 @@ namespace Oxide.Plugins
             //Item item = ItemManager.CreateByPartialName("battery");
             Item item = ItemManager.CreateByPartialName(SHORTNAME_MAGAZINE);
             item.skin = type._skinID;
-            item.name = GetMagazineInfo(item)._name;
+            item.name = type._name;
             item.info.condition.max = 10000;
             item.maxCondition = item.info.condition.max;
             item.condition = 1;
@@ -776,6 +1345,16 @@ namespace Oxide.Plugins
             Puts($"{item.GetHeldEntity().GetType().Name}");
             var weapon = item.GetHeldEntity() as BaseProjectile;
             weapon.primaryMagazine.contents = 0;
+            player.inventory.GiveItem(item);
+        }
+
+        public void GiveWrappedAmmo(BasePlayer player, WrappedAmmoInfo type, int amount)
+        {
+            //Item item = ItemManager.CreateByPartialName("battery");
+            Item item = ItemManager.CreateByPartialName("present.large");
+            item.skin = type._skinID;
+            item.name = type._name;
+            item.amount = amount;
             player.inventory.GiveItem(item);
         }
 
@@ -791,6 +1370,33 @@ namespace Oxide.Plugins
                 GiveMagazine(player, mag.Value);
             }
         }
+
+        [ChatCommand("ammobox")]
+        void TestAmmoBox(BasePlayer player)
+        {
+            if (!player.IsAdmin)
+            {
+                return;
+            }
+            foreach (var ammo in WrappedAmmoDefinitions.Values)
+            {
+                GiveWrappedAmmo(player, ammo, 10);
+            }
+        }
+
+        [ChatCommand("ammo")]
+        void TestAmmos(BasePlayer player)
+        {
+            if (!player.IsAdmin)
+            {
+                return;
+            }
+            foreach (var ammo in AmmoDefinitions.Values)
+            {
+                player.GiveItem(ammo.CreateItem(ammo._stackLimit));   
+            }
+        }
+
 
         #endregion
 
