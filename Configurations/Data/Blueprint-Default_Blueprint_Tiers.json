@@ -680,7 +680,7 @@
     "deermeat.raw": 99999,
     "mailbox": 0,
     "scrap": 99999,
-    "dropbox": 99999,
-    "guntrap": 99999
+    "dropbox": 1,
+    "guntrap": 2,
   }
 }
