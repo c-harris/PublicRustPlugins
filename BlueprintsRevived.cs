@@ -10,7 +10,7 @@ using Rust;
 
 namespace Oxide.Plugins
 {
-    [Info("BlueprintsRevived", "Jake_Rich", "1.1.1", ResourceId = 2433)]
+    [Info("BlueprintsRevived", "Jake_Rich", "1.2.0", ResourceId = 2433)]
     [Description("The original Blueprint System and balance changes!")]
 
     public class BlueprintsRevived : RustPlugin
@@ -3583,6 +3583,10 @@ namespace Oxide.Plugins
 
         public void AssignLoot(LootContainer container)
         {
+            if (!container.initialLootSpawn)
+            {
+                return;
+            }
             if (container.PrefabName == "assets/prefabs/npc/patrol helicopter/heli_crate.prefab") //Ignore heli crates
             {
                 return;
