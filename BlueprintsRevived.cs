@@ -1569,6 +1569,7 @@ namespace Oxide.Plugins
             else if (IsLootContainer(entity))
             {
                 LootContainer container = entity as LootContainer;
+                container.lootDefinition = null;
                 NextTick(() =>
                 {
                     AssignLoot(container);
@@ -3591,13 +3592,6 @@ namespace Oxide.Plugins
             {
                 return;
             }
-
-            foreach (var item in container.inventory.itemList)
-            {
-                item.Remove();
-            }
-
-            ItemManager.DoRemoves();
 
             string name = "";
             if (!lootContainerAssignments.TryGetValue(container.name, out name))
