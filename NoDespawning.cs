@@ -1,6 +1,5 @@
 ﻿using Oxide.Core;
 using Oxide.Core.Plugins;
-// Reference: Oxide.Core.MySql
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -10,7 +9,7 @@ using System.Globalization;
 
 namespace Oxide.Plugins
 {
-    [Info("PersistantItems", "Jake_Rich", 0.1)]
+    [Info("NoDespawning", "Jake_Rich", "1.0.1", ResourceId = 2467)]
     [Description("Fuck despawners")]
     class NoDespawning : RustPlugin
     {
@@ -46,10 +45,11 @@ namespace Oxide.Plugins
         public static int halfSize;
         public static float drawDelay = 1f;
         public float originalDespawnTime = 180f;
-        public static float minimumScaledDespawnTime = 60f * 20; 
+        public static float minimumScaledDespawnTime = 60f * 10;
         public ItemGrid itemGrid { get; set; }
         public Timer _despawnTimer { get; set; }
         public bool initalized = false;
+
         public ConfigurationAccessor<Settings> settings { get; set; } = new ConfigurationAccessor<Settings>("NoDespawning-Settings");
         public ConfigurationAccessor<Database> data { get; set; } = new ConfigurationAccessor<Database>("NoDespawning-Database");
 
@@ -69,32 +69,31 @@ namespace Oxide.Plugins
 
             #endregion
 
-            private string name { get; set; }
+            public string name { get; set; }
             public Type Instance { get; set; }
 
             public ConfigurationAccessor(string name)
             {
                 this.name = name;
                 Init();
-                Reload();
             }
 
             public virtual void Init()
             {
-
+                Reload();
             }
 
-            public void Load()
+            public virtual void Load()
             {
                 Instance = GetTypedConfigurationModel(name);
             }
 
-            public void Save()
+            public virtual void Save()
             {
                 SaveTypedConfigurationModel(name, Instance);
             }
 
-            public void Reload()
+            public virtual void Reload()
             {
                 Load(); //Need to load and save to init list
                 Save();
@@ -102,7 +101,63 @@ namespace Oxide.Plugins
             }
         }
 
-        public class Settings
+        public class GithubConfig<Type> : ConfigurationAccessor<Type> where Type : BaseConfigClass
+        {
+            public GithubConfig(string name) : base(name)
+            {
+
+            }
+
+            public override void Init()
+            {
+                base.Init();
+                Download();
+            }
+
+            public void Download()
+            {
+                Dictionary<string, string> headers = new Dictionary<string, string>
+                {
+                    {"User-Agent", "aleks976" },
+                    {"Accept", "application/vnd.github.v3+json"}
+                };
+                _plugin.webrequest.EnqueueGet($"https://raw.githubusercontent.com/Aleks976/PublicRustPlugins/master/Configurations/Data/{name}.json", (code, response) =>
+                {
+                    if (code == 200)
+                    {
+                        Type deserialize;
+                        try
+                        {
+                            deserialize = JsonConvert.DeserializeObject<Type>(response);
+                        }
+                        catch
+                        {
+                            return;
+                        }
+                        Instance = deserialize;
+                        Save();
+                        Load();
+                        _plugin.Puts($"Downloaded {name}.json");
+                    }
+                    else
+                    {
+                        _plugin.Puts($"Failed to download {name} settings!");
+                    }
+                    Instance.Initialize();
+                    Save();
+                }, _plugin, headers, 60);
+            }
+        }
+
+        public class BaseConfigClass
+        {
+            public virtual void Initialize()
+            {
+
+            }
+        }
+
+        public class Settings : BaseConfigClass
         {
             public Dictionary<string, string> despawnTimes { get; set; } = new Dictionary<string, string>();
 
@@ -110,7 +165,7 @@ namespace Oxide.Plugins
 
             private HashSet<int> scaling { get; set; } = new HashSet<int>();
 
-            public void Init()
+            public override void Initialize()
             {
                 foreach (var item in ItemManager.itemList)
                 {
@@ -174,7 +229,7 @@ namespace Oxide.Plugins
                 }
                 if (item.contents != null)
                 {
-                    time *= Mathf.Max(1,item.contents.itemList.Count(x => x.info == item.info)); //Adjust time based on amount of stacked items
+                    time *= Mathf.Max(1, item.contents.itemList.Count(x => x.info == item.info)); //Adjust time based on amount of stacked items
                 }
                 if (!scaling.Contains(item.info.itemid))
                 {
@@ -196,7 +251,7 @@ namespace Oxide.Plugins
             public void SaveDespawnTimes()
             {
                 despawnTimeLeft.Clear();
-                foreach(var item in _plugin.itemGrid.items)
+                foreach (var item in _plugin.itemGrid.items)
                 {
                     despawnTimeLeft[item.Key.net.ID] = item.Value.despawnTimeLeft;
                 }
@@ -204,7 +259,7 @@ namespace Oxide.Plugins
 
             public void Load()
             {
-                foreach(var item in GameObject.FindObjectsOfType<DroppedItem>())
+                foreach (var item in GameObject.FindObjectsOfType<DroppedItem>())
                 {
                     float time;
                     if (!despawnTimeLeft.TryGetValue(item.net.ID, out time))
@@ -252,7 +307,7 @@ namespace Oxide.Plugins
                         return null;
                     }
                     grid = new ItemChunk(x, y);
-                    itemGrid[x,y] = grid;
+                    itemGrid[x, y] = grid;
                 }
                 return grid;
             }
@@ -335,10 +390,10 @@ namespace Oxide.Plugins
                 {
                     return "No grids found.";
                 }
-                return $"Chunks: {grids.Count} / {itemGrid.GetLength(0) * itemGrid.GetLength(1)} (Active: {grids.Count(x=>x._active)} Inactive: {grids.Count(x => !x._active)})\n" +
-                       $"Items: {items.Count} (Active: {grids.Sum(x=>x.activeItems.Count)} Inactive: {grids.Sum(x => x.inactiveItems.Count)})\n" +
+                return $"Chunks: {grids.Count} / {itemGrid.GetLength(0) * itemGrid.GetLength(1)} (Active: {grids.Count(x => x._active)} Inactive: {grids.Count(x => !x._active)})\n" +
+                       $"Items: {items.Count} (Active: {grids.Sum(x => x.activeItems.Count)} Inactive: {grids.Sum(x => x.inactiveItems.Count)})\n" +
                        $"Max Per Chunk: {grids.Max(x => x.activeItems.Count + x.inactiveItems.Count)}\n" +
-                       $"Avg Per Chunk: {Math.Round(grids.Sum(x => x.activeItems.Count + x.inactiveItems.Count) / (float)grids.Count,2)}\n" +
+                       $"Avg Per Chunk: {Math.Round(grids.Sum(x => x.activeItems.Count + x.inactiveItems.Count) / (float)grids.Count, 2)}\n" +
                        $"";
             }
 
@@ -376,7 +431,7 @@ namespace Oxide.Plugins
 
             public void DeactivateGrids()
             {
-                foreach(var grid in GetAllChunks())
+                foreach (var grid in GetAllChunks())
                 {
                     grid.DeactivateChunk();
                 }
@@ -576,7 +631,7 @@ namespace Oxide.Plugins
                 string text = _active ? "<color=#FF0000>Active</color>" : "<color=#00FF00>Disabled</color>";
                 return $"Active: {activeItems.Count}\n" +
                        $"Inactive: {inactiveItems.Count}\n" +
-                       string.Join("\n",activeItems.Union(inactiveItems).Select(x => $"{x.item.amount}x {x.item.info.displayName.english}: {_plugin.itemGrid.GetItemInfo(x).despawnTimeLeft} left").ToArray());
+                       string.Join("\n", activeItems.Union(inactiveItems).Select(x => $"{x.item.amount}x {x.item.info.displayName.english}: {_plugin.itemGrid.GetItemInfo(x).despawnTimeLeft} left").ToArray());
             }
         }
 
@@ -776,14 +831,14 @@ namespace Oxide.Plugins
             var chunk = itemGrid.GetGrid(player.transform.position, false);
             if (chunk == null)
             {
-                PrintToChat(player,"You are not in a chunk");
+                PrintToChat(player, "You are not in a chunk");
             }
             else
             {
                 PrintToChat(player, chunk.GetDebugInfo());
-                
+
             }
-            
+
         }
 
         #region Hooks
@@ -793,9 +848,12 @@ namespace Oxide.Plugins
             initalized = true;
             originalDespawnTime = ConVar.Server.itemdespawn; //Just set items not to despawn, and handle removing manually
             ConVar.Server.itemdespawn = float.MaxValue;
-            settings.Reload();
-            settings.Instance.Init();
+
+            settings.Instance.Initialize();
             settings.Save();
+            //settings = new ConfigurationAccessor<Settings>("NoDespawning-Settings");
+
+
             //Puts($"Worldsize: {ConVar.Server.worldsize}");
             halfSize = ConVar.Server.worldsize / 2;
             itemGrid = new ItemGrid();
@@ -821,7 +879,7 @@ namespace Oxide.Plugins
             Puts($"Assigned {items.Length} dropped items into the grid.");
             _despawnTimer = timer.Every(despawnTimerDelay, DespawnLoop);
             PrintItemAmounts();
-            timer.Every(300f, PrintItemAmounts);
+            //timer.Every(300f, PrintItemAmounts);
         }
 
         void Loaded()
@@ -832,10 +890,15 @@ namespace Oxide.Plugins
         void Unload()
         {
             ConVar.Server.itemdespawn = originalDespawnTime;
+            _despawnTimer?.Destroy();
         }
 
         void OnEntityKill(BaseNetworkable entity) //Removes entities from chunks
         {
+            if (!initalized)
+            {
+                return;
+            }
             if (entity is DroppedItem)
             {
                 itemGrid.OnItemKilled((DroppedItem)entity);
@@ -879,8 +942,8 @@ namespace Oxide.Plugins
             {
                 if (item.contents.itemList.Count > 0) //Handles stacked items with conditions (stored in contents)
                 {
-                    Puts($"OnItemPickup Contents Count: {item.contents.itemList.Count}");
-                    if (item.contents.itemList.Any(x=>x.info == item.info)) //If item and contents are the same, we are storing them on purpose
+                    //Puts($"OnItemPickup Contents Count: {item.contents.itemList.Count}");
+                    if (item.contents.itemList.Any(x => x.info == item.info)) //If item and contents are the same, we are storing them on purpose
                     {
                         Item newItem = item.contents.itemList.Last(x => x.info == item.info);
 
@@ -1018,28 +1081,6 @@ namespace Oxide.Plugins
         }
 
 
-        #endregion
-
-        #region Extensions
-        /*
-        public static class JakeExtension
-        { 
-            //Took from google, but its simple enough so I don't feel bad (plus I did this throughout code)
-            public static TValue GetOrCreate<TKey, TValue>(this IDictionary<TKey, TValue> dict, TKey key)
-        where TValue : new()
-            {
-                TValue val;
-
-                if (!dict.TryGetValue(key, out val))
-                {
-                    val = new TValue();
-                    dict.Add(key, val);
-                }
-
-                return val;
-            }
-        }
-        */
         #endregion
     }
 }
