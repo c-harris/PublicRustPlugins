@@ -63,9 +63,9 @@ namespace OxidePluginV1
                 Init();
             }
 
-            public void AddOutline()
+            public void AddOutline(string color = "0 0 0 1", string distance = "1 -1")
             {
-                Outline = new UIOutline("0 0 0 1", "1 -1");
+                Outline = new UIOutline(color, distance);
                 Element.Components.Add(Outline.component);
             }
 
@@ -682,8 +682,11 @@ namespace OxidePluginV1
         {
             public CuiOutlineComponent component;
 
-            public string color = "0 0 0 1";
-            public string distance = "0.25 0.25";
+            public string Color { get { return _color; } set { _color = value; UpdateComponent(); } }
+            public string Distance { get { return _distance; } set { _distance = value; UpdateComponent(); } }
+
+            private string _color = "0 0 0 1";
+            private string _distance = "0.25 0.25";
 
             public UIOutline()
             {
@@ -692,8 +695,19 @@ namespace OxidePluginV1
 
             public UIOutline(string color, string distance)
             {
-                this.color = color;
-                this.distance = distance;
+                _color = color;
+                _distance = distance;
+                UpdateComponent();
+            }
+
+            private void UpdateComponent()
+            {
+                if (component == null)
+                {
+                    component = new CuiOutlineComponent();
+                }
+                component.Color = _color;
+                component.Distance = _distance;
             }
         }
 
