@@ -29,12 +29,24 @@ namespace OxidePluginV1
             public CuiElement Element { get; protected set; }
             public UIOutline Outline { get; set; }
             public CuiRectTransformComponent transform { get; protected set; }
+            public float FadeOut
+            {
+                get
+                {
+                    return Element == null ? _fadeOut : Element.FadeOut;
+                }
+                set
+                {
+                    if (Element != null)
+                    {
+                        Element.FadeOut = value;
+                    }
+                    _fadeOut = value;
+                }
+            }
+            private float _fadeOut = 0f;
 
             public string Name { get { return Element.Name; } }
-
-            public Func<BasePlayer, bool> conditionalShow { get; set; }
-
-            public Func<BasePlayer, Vector2> conditionalSize { get; set; }
 
             public UIElement(UIBaseElement parent = null) : base(parent)
             {
@@ -55,8 +67,9 @@ namespace OxidePluginV1
                     Parent = this.parent == null ? this.Parent : this.parent.Parent,
                     Components =
                         {
-                            transform
-                        }
+                            transform,
+                        },
+                    FadeOut = _fadeOut,
                 };
                 UpdatePlacement();
 
@@ -76,22 +89,6 @@ namespace OxidePluginV1
 
             public override void Show(BasePlayer player, bool children = true)
             {
-                if (conditionalShow != null)
-                {
-                    if (!conditionalShow(player))
-                    {
-                        return;
-                    }
-                }
-
-                if (conditionalSize != null)
-                {
-                    Vector2 returnSize = conditionalSize.Invoke(player);
-                    if (returnSize != null)
-                    {
-                        SetSize(returnSize.x, returnSize.y);
-                    }
-                }
                 if (AddPlayer(player))
                 {
                     SafeAddUi(player, Element);
@@ -111,8 +108,11 @@ namespace OxidePluginV1
             public override void UpdatePlacement()
             {
                 base.UpdatePlacement();
-                transform.AnchorMin = $"{globalPosition.x} {globalPosition.y}";
-                transform.AnchorMax = $"{globalPosition.x + globalSize.x} {globalPosition.y + globalSize.y}";
+                if (transform != null)
+                {
+                    transform.AnchorMin = $"{globalPosition.x} {globalPosition.y}";
+                    transform.AnchorMax = $"{globalPosition.x + globalSize.x} {globalPosition.y + globalSize.y}";
+                }
                 RefreshAll();
             }
 
@@ -129,6 +129,7 @@ namespace OxidePluginV1
             public void SetParent(UIElement element)
             {
                 Element.Parent = element.Element.Name;
+                UpdatePlacement();
             }
 
         }
@@ -259,8 +260,8 @@ namespace OxidePluginV1
                     if (parent is UIButton)
                     {
                         Element.Parent = (parent as UIButton).Name;
-                        transform.AnchorMin = $"{position.x} {position.y}";
-                        transform.AnchorMax = $"{position.x + size.x} {position.y + size.y}";
+                        transform.AnchorMin = $"{localPosition.x} {localPosition.y}";
+                        transform.AnchorMax = $"{localPosition.x + localSize.x} {localPosition.y + localSize.y}";
                     }
                 }
             }
@@ -480,16 +481,20 @@ namespace OxidePluginV1
 
         public class UIBaseElement
         {
-            public Vector2 position { get; set; } = new Vector2();
-            public Vector2 size { get; set; } = new Vector2();
+            public Vector2 localPosition { get; set; } = new Vector2();
+            public Vector2 localSize { get; set; } = new Vector2();
             public Vector2 globalSize { get; set; } = new Vector2();
             public Vector2 globalPosition { get; set; } = new Vector2();
             public HashSet<BasePlayer> players { get; set; } = new HashSet<BasePlayer>();
             public UIBaseElement parent { get; set; }
             public HashSet<UIBaseElement> children { get; set; } = new HashSet<UIBaseElement>();
-            public Vector2 min { get { return position; } }
-            public Vector2 max { get { return position + size; } }
+            public Vector2 min { get { return localPosition; } }
+            public Vector2 max { get { return localPosition + localSize; } }
             public string Parent { get; set; } = "Hud.Menu";
+
+            public Func<BasePlayer, bool> conditionalShow { get; set; }
+            public Func<BasePlayer, Vector2> conditionalSize { get; set; }
+            public Func<BasePlayer, Vector2> conditionalPosition { get; set; }
 
             public UIBaseElement(UIBaseElement parent = null)
             {
@@ -498,16 +503,13 @@ namespace OxidePluginV1
 
             public UIBaseElement(Vector2 min, Vector2 max, UIBaseElement parent = null) : this(parent)
             {
-                position = min;
-                size = max - min;
-                if (parent != null)
+                localPosition = min;
+                localSize = max - min;
+                if (parent != null && this != parent)
                 {
                     parent.AddElement(this);
                 }
-                if (!(this is UIElement))
-                {
-                    UpdatePlacement();
-                }
+                UpdatePlacement();
             }
 
             public void AddElement(UIBaseElement element)
@@ -539,7 +541,7 @@ namespace OxidePluginV1
 
                 foreach (var child in children)
                 {
-
+                    AddPlayer(player);
                 }
 
                 return false;
@@ -581,14 +583,40 @@ namespace OxidePluginV1
 
             public virtual void Show(BasePlayer player, bool showChildren = true)
             {
-                foreach (var child in children)
+                if (conditionalShow != null)
                 {
-                    child.Show(player, showChildren);
+                    if (!conditionalShow(player))
+                    {
+                        return;
+                    }
+                }
+
+                if (conditionalSize != null)
+                {
+                    Vector2 returnSize = conditionalSize.Invoke(player);
+                    if (returnSize != null)
+                    {
+                        SetSize(returnSize.x, returnSize.y);
+                    }
+                }
+
+                if (conditionalPosition != null)
+                {
+                    Vector2 returnPos = conditionalPosition.Invoke(player);
+                    if (returnPos != null)
+                    {
+                        SetPosition(returnPos.x, returnPos.y);
+                    }
                 }
 
                 if (GetType() == typeof(UIBaseElement))
                 {
                     AddPlayer(player);
+                }
+
+                foreach (var child in children)
+                {
+                    child.Show(player, showChildren);
                 }
             }
 
@@ -612,7 +640,6 @@ namespace OxidePluginV1
             {
                 try
                 {
-                    //_plugin.Puts($"Adding {element.Name} to {player.userID}");
                     List<CuiElement> elements = new List<CuiElement>();
                     elements.Add(element);
                     CuiHelper.AddUi(player, elements);
@@ -638,13 +665,13 @@ namespace OxidePluginV1
 
             public void SetSize(float x, float y)
             {
-                size = new Vector2(x, y);
+                localSize = new Vector2(x, y);
                 UpdatePlacement();
             }
 
             public void SetPosition(float x, float y)
             {
-                position = new Vector2(x, y);
+                localPosition = new Vector2(x, y);
                 UpdatePlacement();
             }
 
@@ -652,21 +679,19 @@ namespace OxidePluginV1
             {
                 if (parent == null)
                 {
-                    globalSize = size;
-                    globalPosition = position;
+                    globalSize = localSize;
+                    globalPosition = localPosition;
                 }
                 else
                 {
-                    globalSize = Vector2.Scale(parent.globalSize, size);
-                    globalPosition = parent.globalPosition + Vector2.Scale(parent.globalSize, position);
+                    globalSize = Vector2.Scale(parent.globalSize, localSize);
+                    globalPosition = parent.globalPosition + Vector2.Scale(parent.globalSize, localPosition);
                 }
 
-                /*
                 foreach (var child in children)
                 {
-                    _plugin.Puts("1.4");
-                    UpdatePlacement();
-                }*/
+                    child.UpdatePlacement();
+                }
             }
         }
 

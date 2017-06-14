@@ -3753,7 +3753,6 @@ namespace Oxide.Plugins
 
                 ItemManager.DoRemoves();
 
-                Puts($"Player inventory items {player.inventory.containerMain.itemList.Count()}");
                 player.inventory.containerMain.capacity = 24;
             }
 

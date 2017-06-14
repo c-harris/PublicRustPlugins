@@ -27,6 +27,7 @@ namespace Oxide.Plugins
         Item localPlayerWeaponFuck;
         Timer _timer;
         public static bool testing = true;
+        public static bool infiniteAmmo = true;
         public static Dictionary<Item, Magazine> magData { get; set; } = new Dictionary<Item, Magazine>(); //TODO: Remove when items are destroyed
         public static Dictionary<BasePlayer, PlayerData> playerData { get; set; } = new Dictionary<BasePlayer, DayZMags.PlayerData>();
 
@@ -134,7 +135,7 @@ namespace Oxide.Plugins
 
         object GetMaxStackable(Item item)
         {
-            Puts("GetMaxStackable");
+            //Puts("GetMaxStackable");
             if (item.skin == 0)
             {
                 return null;
@@ -342,7 +343,7 @@ namespace Oxide.Plugins
 
         object CanStackItem(Item item1, Item item2)
         {
-            Puts($"CanStack()");
+            //Puts($"CanStack()");
             if (item1.skin == 0 || item2.skin == 0)
             {
                 return null;
@@ -455,6 +456,10 @@ namespace Oxide.Plugins
         {
             var weapon = baseProjectile.GetComponent<Weapon>();
             weapon.OnWeaponFired();
+            if (infiniteAmmo)
+            {
+                baseProjectile.primaryMagazine.contents+= 1;
+            }
         }
 
         #endregion
@@ -1393,7 +1398,7 @@ namespace Oxide.Plugins
             }
             foreach (var ammo in AmmoDefinitions.Values)
             {
-                player.GiveItem(ammo.CreateItem(ammo._stackLimit));   
+                player.GiveItem(ammo.CreateItem(ammo._stackLimit * 10));   
             }
         }
 
