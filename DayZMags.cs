@@ -26,7 +26,7 @@ namespace Oxide.Plugins
 
         Item localPlayerWeaponFuck;
         Timer _timer;
-        public static bool testing = false;
+        public static bool testing = true;
         public static bool infiniteAmmo = false;
         public static Dictionary<Item, Magazine> magData { get; set; } = new Dictionary<Item, Magazine>(); //TODO: Remove when items are destroyed
         public static Dictionary<BasePlayer, PlayerData> playerData { get; set; } = new Dictionary<BasePlayer, DayZMags.PlayerData>();
@@ -664,11 +664,13 @@ namespace Oxide.Plugins
         {
             private HashSet<AmmoType> _allowedAmmo { get; set; }
             public WeaponType _type { get; set; }
+            public int ModSlots { get; set; }
 
-            public WeaponInfo(WeaponType type, params AmmoType[] ammo)
+            public WeaponInfo(WeaponType type, int modSlots, params AmmoType[] ammo)
             {
                 _allowedAmmo = new HashSet<AmmoType>(ammo);
                 _type = type;
+                modSlots = modSlots;
             }
 
             public bool AcceptsAmmo(AmmoType ammo)
@@ -1344,31 +1346,31 @@ namespace Oxide.Plugins
 
         private static Dictionary<string, WeaponInfo> WeaponDefinitions = new Dictionary<string, WeaponInfo>()
         {
-            { "rifle.ak", new WeaponInfo(WeaponType.Ak47, AmmoType.Ammo_Rifle) },
-            { "rifle.lr300", new WeaponInfo(WeaponType.LR300,  AmmoType.Ammo_Rifle) },
-            { "rifle.bolt", new WeaponInfo(WeaponType.BoltAction, AmmoType.Ammo_Rifle) },
-            { "rifle.semimauto", new WeaponInfo(WeaponType.Semi_Rifle, AmmoType.Ammo_Rifle) },
-            { "msg.m249", new WeaponInfo(WeaponType.M249, AmmoType.Ammo_Rifle) },
+            { "rifle.ak", new WeaponInfo(WeaponType.Ak47, 3, AmmoType.Ammo_Rifle) },
+            { "rifle.lr300", new WeaponInfo(WeaponType.LR300,  3, AmmoType.Ammo_Rifle) },
+            { "rifle.bolt", new WeaponInfo(WeaponType.BoltAction, 3, AmmoType.Ammo_Rifle) },
+            { "rifle.semimauto", new WeaponInfo(WeaponType.Semi_Rifle, 3, AmmoType.Ammo_Rifle) },
+            { "msg.m249", new WeaponInfo(WeaponType.M249, 3, AmmoType.Ammo_Rifle) },
 
-            { "shotgun.pump", new WeaponInfo(WeaponType.PumpShotgun, AmmoType.Ammo_Buckshot) },
-            { "shotgun.double", new WeaponInfo(WeaponType.DoubleBarrel, AmmoType.Ammo_Buckshot) },
+            { "shotgun.pump", new WeaponInfo(WeaponType.PumpShotgun, 2, AmmoType.Ammo_Buckshot) },
+            { "shotgun.double", new WeaponInfo(WeaponType.DoubleBarrel, 2, AmmoType.Ammo_Buckshot) },
 
-            { "crossbow", new WeaponInfo(WeaponType.Crossbow, AmmoType.Ammo_Arrow) },
-            { "flamethrower", new WeaponInfo(WeaponType.FlameThrower, AmmoType.Ammo_LowGrade) },
+            { "crossbow", new WeaponInfo(WeaponType.Crossbow, 2, AmmoType.Ammo_Arrow) },
+            { "flamethrower", new WeaponInfo(WeaponType.FlameThrower, 0, AmmoType.Ammo_LowGrade) },
 
-            { "smg.thompson", new WeaponInfo(WeaponType.Thompson, AmmoType.Ammo_Pistol) },
-            { "smg.2", new WeaponInfo(WeaponType.CustomSMG, AmmoType.Ammo_Pistol) },
-            { "smg.mp5", new WeaponInfo(WeaponType.MP5, AmmoType.Ammo_Pistol) },
+            { "smg.thompson", new WeaponInfo(WeaponType.Thompson, 2, AmmoType.Ammo_Pistol) },
+            { "smg.2", new WeaponInfo(WeaponType.CustomSMG, 3, AmmoType.Ammo_Pistol) },
+            { "smg.mp5", new WeaponInfo(WeaponType.MP5, 3, AmmoType.Ammo_Pistol) },
 
-            { "pistol.revolver", new WeaponInfo(WeaponType.Revolver, AmmoType.Ammo_Pistol) },
-            { "pistol.python", new WeaponInfo(WeaponType.Python, AmmoType.Ammo_Pistol) },
-            { "pistol.semiauto", new WeaponInfo(WeaponType.Semi_Pistol, AmmoType.Ammo_Pistol) },
-            { "pistol.m92", new WeaponInfo(WeaponType.M92Pistol, AmmoType.Ammo_Pistol) },
+            { "pistol.revolver", new WeaponInfo(WeaponType.Revolver, 1, AmmoType.Ammo_Pistol) },
+            { "pistol.python", new WeaponInfo(WeaponType.Python, 3, AmmoType.Ammo_Pistol) },
+            { "pistol.semiauto", new WeaponInfo(WeaponType.Semi_Pistol, 3, AmmoType.Ammo_Pistol) },
+            { "pistol.m92", new WeaponInfo(WeaponType.M92Pistol, 3, AmmoType.Ammo_Pistol) },
 
             //Weapons that don't need magazines
-            { "shotgun.waterpipe", new WeaponInfo(WeaponType.Waterpipe, AmmoType.Ammo_Buckshot) },
-            { "bow.hunting", new WeaponInfo(WeaponType.Bow, AmmoType.Ammo_Arrow) },
-            { "rocket.launcher", new WeaponInfo(WeaponType.RocketLauncher, AmmoType.Ammo_Rockets) }
+            { "shotgun.waterpipe", new WeaponInfo(WeaponType.Waterpipe, 2, AmmoType.Ammo_Buckshot) },
+            { "bow.hunting", new WeaponInfo(WeaponType.Bow, 0, AmmoType.Ammo_Arrow) },
+            { "rocket.launcher", new WeaponInfo(WeaponType.RocketLauncher, 0, AmmoType.Ammo_Rockets) }
         };
 
         #endregion
