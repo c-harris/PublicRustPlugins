@@ -26,8 +26,8 @@ namespace Oxide.Plugins
 
         Item localPlayerWeaponFuck;
         Timer _timer;
-        public static bool testing = true;
-        public static bool infiniteAmmo = true;
+        public static bool testing = false;
+        public static bool infiniteAmmo = false;
         public static Dictionary<Item, Magazine> magData { get; set; } = new Dictionary<Item, Magazine>(); //TODO: Remove when items are destroyed
         public static Dictionary<BasePlayer, PlayerData> playerData { get; set; } = new Dictionary<BasePlayer, DayZMags.PlayerData>();
 
@@ -364,7 +364,7 @@ namespace Oxide.Plugins
         {
             if (MagazineHelper.IsMagazine(item))
             {
-                var player = item?.parent?.GetOwnerPlayer();
+                var player = container?.GetOwnerPlayer();
                 if (player == null)
                 {
                     return null;
@@ -520,7 +520,7 @@ namespace Oxide.Plugins
         #endregion
 
         #region Classes
-
+        //TODO: Magazines aren't getting initialized
         public class PlayerData
         {
             private BasePlayer _player { get; set; }
@@ -542,6 +542,11 @@ namespace Oxide.Plugins
                     return;
                 }
                 var weaponInfo = GetWeapon().GetDefinition();
+                if (weaponInfo == null)
+                {
+                    Error("OnReloadButtonDown() weaponInfo null!");
+                    return;
+                }
                 var magazine = GetBestMagazine(weaponInfo.GetWeaponType());
                 if (magazine == null)
                 {
@@ -640,7 +645,7 @@ namespace Oxide.Plugins
             public Magazine GetBestMagazine(WeaponType weapon)
             {
                 //TODO: Holy fucked up LINQ batman!
-                return MagazineHelper.GetMagazine(_player.inventory.AllItems().Where(x => MagazineHelper.IsMagazine(x, weapon)).OrderByDescending(x => MagazineHelper.GetMagazineInfo(x)._capacity).First());
+                return _player.inventory.AllItems().Where(x => MagazineHelper.IsMagazine(x, weapon)).Select(x=>MagazineHelper.GetMagazine(x)).Where(x=>x.Bullets > 0).OrderByDescending(x => x.Bullets).FirstOrDefault();
             }
 
             public bool HasWeapon()
@@ -769,6 +774,7 @@ namespace Oxide.Plugins
             private int _bullets { get; set; }
             private ItemDefinition _bulletDefinition { get; set; } = ItemManager.FindItemDefinition("ammo.shotgun");
             private AmmoType _loadedAmmoType { get; set; }
+            public int Bullets { get { return _bullets; } }
 
             public Magazine(Item item)
             {
@@ -901,12 +907,12 @@ namespace Oxide.Plugins
                 {
                     return false;
                 }
-                WeaponType type;
-                if (!weaponAssignments.TryGetValue(weapon.info.shortname, out type))
+                WeaponInfo def;
+                if (!WeaponDefinitions.TryGetValue(weapon.info.shortname, out def))
                 {
                     return false;
                 }
-                return _definition.allowedWeapons.Contains(type);
+                return _definition.allowedWeapons.Contains(def.GetWeaponType());
             }
 
             public bool CanWeaponAccept(WeaponType type)
@@ -1092,7 +1098,8 @@ namespace Oxide.Plugins
         {
             public static WeaponInfo GetWeaponInfo(BaseProjectile weapon)
             {
-                return GetWeaponInfo(weapon.GetItem());
+                _plugin.Puts($"GetWeaponInfo() {weapon.GetItem().info.shortname}");
+                return WeaponDefinitions[weapon.GetItem().info.shortname];
             }
 
             public static WeaponInfo GetWeaponInfo(Item item)
@@ -1280,20 +1287,45 @@ namespace Oxide.Plugins
             Ammo_Buckshot = 4,
             Ammo_HandmadeShell = 5,
             Ammo_Arrow = 6,
+            Ammo_LowGrade = 7,
+            Ammo_Rockets = 8,
         }
 
         private static Dictionary<ulong, MagazineInfo> MagazineDefinitions = new Dictionary<ulong, MagazineInfo>()
         {
+            {946780213, new MagazineInfo(946780213, "Creative Magazine", 100000, AmmoType.Ammo_Rifle, 100000, 0.1f, WeaponType.Ak47, WeaponType.M249, WeaponType.LR300) },
+
             {939979493u, new MagazineInfo(939979493u, "STANAG Magazine", 30, AmmoType.Ammo_Rifle, 3, 0.6f, WeaponType.Ak47, WeaponType.LR300, WeaponType.M249, WeaponType.Semi_Rifle) },
             {940561694u, new MagazineInfo(940561694u, "75Rnd DrumMag", 75, AmmoType.Ammo_Rifle, 3, 1.0f, WeaponType.Ak47) },
-            {941402580u, new MagazineInfo(941402580u, "5Rnd Shotgun", 5, AmmoType.Ammo_Buckshot, 1, 1.0f, WeaponType.PumpShotgun)},
-            {941400934u, new MagazineInfo(941400934u, "8Rnd Shotgun", 8, AmmoType.Ammo_Buckshot, 1, 1.2f, WeaponType.PumpShotgun)},
-            {941405262u, new MagazineInfo(941405262u, "20Rnd Shotgun", 20, AmmoType.Ammo_Buckshot, 1, 2f, WeaponType.PumpShotgun)},
             {941865444u, new MagazineInfo(941865444u, "10Rnd CMAG", 10, AmmoType.Ammo_Rifle, 2, 0.4f, WeaponType.Ak47, WeaponType.LR300, WeaponType.M249, WeaponType.Semi_Rifle) },
             {941868420u, new MagazineInfo(941868420u, "20Rnd CMAG", 20, AmmoType.Ammo_Rifle, 2, 0.6f, WeaponType.Ak47, WeaponType.LR300, WeaponType.M249, WeaponType.Semi_Rifle) },
             {941869375u, new MagazineInfo(941869375u, "30Rnd CMAG", 30, AmmoType.Ammo_Rifle, 2, 0.8f, WeaponType.Ak47, WeaponType.LR300, WeaponType.M249, WeaponType.Semi_Rifle) },
             {941871543u, new MagazineInfo(941871543u, "40Rnd CMAG", 40, AmmoType.Ammo_Rifle, 2, 1.0f, WeaponType.Ak47, WeaponType.LR300, WeaponType.M249, WeaponType.Semi_Rifle) },
-            {941873168u, new MagazineInfo(941873168u, "100Rnd CMAG", 100, AmmoType.Ammo_Rifle, 3, 2.0f, WeaponType.LR300, WeaponType.M249) },
+            {941873168u, new MagazineInfo(941873168u, "80Rnd CMAG", 80, AmmoType.Ammo_Rifle, 3,2f, WeaponType.M249, WeaponType.LR300) },
+            {946762518, new MagazineInfo(946762518, "150Rnd M249 Magazine", 150, AmmoType.Ammo_Rifle, 5, 1.0f, WeaponType.M249) },
+            {946778674, new MagazineInfo(946778674, "30Rnd AK Magazine", 30, AmmoType.Ammo_Rifle, 3, 2.0f, WeaponType.Ak47) },
+            {946781897, new MagazineInfo(946781897, "M92 Magazine", 16, AmmoType.Ammo_Pistol, 3, 2.0f, WeaponType.M92Pistol) }, //Glock19 Magazine
+            {946783613, new MagazineInfo(946783613, "Semi-Pistol Magazine", 10, AmmoType.Ammo_Pistol, 3, 2.0f, WeaponType.Semi_Pistol) }, //P1 Pistol Magazine
+            {946784019, new MagazineInfo(946784019, "Python Speedloader", 6, AmmoType.Ammo_Pistol, 3, 2.0f, WeaponType.Python) },
+
+            {946779217, new MagazineInfo(946779217, "5Rnd Bolt Magazine", 5, AmmoType.Ammo_Rifle, 1, 1.0f, WeaponType.BoltAction) },
+            
+            {946781016, new MagazineInfo(946781016, "Double Barrel Quickloader", 2, AmmoType.Ammo_Buckshot, 3, 2.0f, WeaponType.DoubleBarrel) },
+            {941402580u, new MagazineInfo(941402580u, "5Rnd Shotgun", 5, AmmoType.Ammo_Buckshot, 1, 1.0f, WeaponType.PumpShotgun)},
+            {941400934u, new MagazineInfo(941400934u, "8Rnd Shotgun", 8, AmmoType.Ammo_Buckshot, 1, 1.2f, WeaponType.PumpShotgun)},
+            {941405262u, new MagazineInfo(941405262u, "20Rnd Shotgun", 20, AmmoType.Ammo_Buckshot, 1, 2f, WeaponType.PumpShotgun)},
+
+            {946782998, new MagazineInfo(946782998, "25Rnd MP5 Magazine", 25, AmmoType.Ammo_Pistol, 3, 2.0f, WeaponType.MP5) },
+            {946783337, new MagazineInfo(946783337, "45Rnd MP5 Magazine", 45, AmmoType.Ammo_Pistol, 3, 2.0f, WeaponType.MP5) },
+
+            //Unused
+            //{946784370, new MagazineInfo(946784370, "25Rnd UMP Magazine", 25, AmmoType.Ammo_Pistol, 3, 2.0f, WeaponType.MP5) },
+            //{946777860, new MagazineInfo(946777860, ".22 Pistol Magazine", 10, AmmoType.Ammo_Pistol, 3, 2.0f, WeaponType.Semi_Pistol) },
+            //{946779679, new MagazineInfo(946779679, "CR75 Magazine", 10, AmmoType.Ammo_Pistol, 3, 2.0f, WeaponType.Semi_Pistol) },
+            //{946782318, new MagazineInfo(946782318, "M1911 Magazine", 10, AmmoType.Ammo_Pistol, 3, 2.0f, WeaponType.Semi_Pistol) },
+            //{946781518, new MagazineInfo(946781518, "FNX75 Magazine", 10, AmmoType.Ammo_Pistol, 3, 2.0f, WeaponType.Semi_Pistol) },
+            //{946782704, new MagazineInfo(946782704, "Makarov Magazine", 8, AmmoType.Ammo_Pistol, 3, 2.0f, WeaponType.Semi_Pistol) }
+
         };
 
         private static Dictionary<ulong, WrappedAmmoInfo> WrappedAmmoDefinitions = new Dictionary<ulong, WrappedAmmoInfo>()
@@ -1317,17 +1349,26 @@ namespace Oxide.Plugins
             { "rifle.bolt", new WeaponInfo(WeaponType.BoltAction, AmmoType.Ammo_Rifle) },
             { "rifle.semimauto", new WeaponInfo(WeaponType.Semi_Rifle, AmmoType.Ammo_Rifle) },
             { "msg.m249", new WeaponInfo(WeaponType.M249, AmmoType.Ammo_Rifle) },
+
             { "shotgun.pump", new WeaponInfo(WeaponType.PumpShotgun, AmmoType.Ammo_Buckshot) },
             { "shotgun.double", new WeaponInfo(WeaponType.DoubleBarrel, AmmoType.Ammo_Buckshot) },
-        };
 
-        private static Dictionary<string, WeaponType> weaponAssignments = new Dictionary<string, WeaponType>()
-        {
-            {"rifle.semiauto", WeaponType.Semi_Rifle},
-            {"rifle.ak", WeaponType.Ak47},
-            {"lmg.m249", WeaponType.M249},
-            {"rifle.lr300", WeaponType.LR300},
-            {"shotgun.pump", WeaponType.PumpShotgun },
+            { "crossbow", new WeaponInfo(WeaponType.Crossbow, AmmoType.Ammo_Arrow) },
+            { "flamethrower", new WeaponInfo(WeaponType.FlameThrower, AmmoType.Ammo_LowGrade) },
+
+            { "smg.thompson", new WeaponInfo(WeaponType.Thompson, AmmoType.Ammo_Pistol) },
+            { "smg.2", new WeaponInfo(WeaponType.CustomSMG, AmmoType.Ammo_Pistol) },
+            { "smg.mp5", new WeaponInfo(WeaponType.MP5, AmmoType.Ammo_Pistol) },
+
+            { "pistol.revolver", new WeaponInfo(WeaponType.Revolver, AmmoType.Ammo_Pistol) },
+            { "pistol.python", new WeaponInfo(WeaponType.Python, AmmoType.Ammo_Pistol) },
+            { "pistol.semiauto", new WeaponInfo(WeaponType.Semi_Pistol, AmmoType.Ammo_Pistol) },
+            { "pistol.m92", new WeaponInfo(WeaponType.M92Pistol, AmmoType.Ammo_Pistol) },
+
+            //Weapons that don't need magazines
+            { "shotgun.waterpipe", new WeaponInfo(WeaponType.Waterpipe, AmmoType.Ammo_Buckshot) },
+            { "bow.hunting", new WeaponInfo(WeaponType.Bow, AmmoType.Ammo_Arrow) },
+            { "rocket.launcher", new WeaponInfo(WeaponType.RocketLauncher, AmmoType.Ammo_Rockets) }
         };
 
         #endregion
@@ -1364,11 +1405,33 @@ namespace Oxide.Plugins
         }
 
         [ChatCommand("mag")]
-        void TestMagazines(BasePlayer player)
+        void TestMagazines(BasePlayer player, string command, string[] args)
         {
             if (!player.IsAdmin)
             {
                 return;
+            }
+            string search = "";
+            int amount = 1;
+            if (args.Length > 0)
+            {
+                search = args[0];
+                if (args.Length > 1)
+                {
+                   int.TryParse(args[1], out amount);
+                }
+            }
+            if (search != null && search != "")
+            {
+                MagazineInfo info = MagazineDefinitions.Values.FirstOrDefault(x => x._name.ToLower().Contains(search.ToLower()));
+                if (info != null)
+                {
+                    for (int i = 0; i < amount; i++)
+                    {
+                        GiveMagazine(player, info);
+                    }
+                    return;
+                }
             }
             foreach (var mag in MagazineDefinitions)
             {
