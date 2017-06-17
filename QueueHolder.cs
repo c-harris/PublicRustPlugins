@@ -20,6 +20,7 @@ namespace Oxide.Plugins
         {
             public ulong userID { get; set; }
             public DateTime disconnectTime { get; set; } = new DateTime();
+            public int lastQueuePosition = -1;
 
             public QueueData()
             {

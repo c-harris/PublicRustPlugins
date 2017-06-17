@@ -221,6 +221,12 @@
     <Compile Include="..\..\Combatlog.cs">
       <Link>Combatlog.cs</Link>
     </Compile>
+    <Compile Include="..\..\CraftingTable.cs">
+      <Link>CraftingTable.cs</Link>
+    </Compile>
+    <Compile Include="..\..\CraftQueueSaver.cs">
+      <Link>CraftQueueSaver.cs</Link>
+    </Compile>
     <Compile Include="..\..\DayZMags.cs">
       <Link>DayZMags.cs</Link>
     </Compile>

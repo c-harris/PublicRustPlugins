@@ -41,7 +41,7 @@ namespace Oxide.Plugins
             }
             return data;
         }
-
+        //TODO: When reloading plugin, set condition of all magazines to 0 (otherwise they will be stuck unreloadable with a constant cooldown)
         //TODO: When loading large magazine, set capacity of gun to the size of the magazine (may be clientside)
 
         #region Save / Load hooks
@@ -890,13 +890,12 @@ namespace Oxide.Plugins
 
             private void UpdateAmmoCount()
             {
-                _plugin.Puts($"UpdateAmmoCount");
                 _magazineEntity.primaryMagazine.contents = _bullets;
                 _magazineEntity.SendNetworkUpdateImmediate();
                 _mag.MarkDirty();
                 if (_modItem != null)
                 {
-                    _plugin.Puts($"Mod item IS NOT null, {_bullets} bullets left");
+                    //_plugin.Puts($"Mod item IS NOT null, {_bullets} bullets left");
                     _modItem.amount = _bullets;
                     _modItem.MarkDirty();
                 }
@@ -1051,7 +1050,6 @@ namespace Oxide.Plugins
 
             public void OnWeaponFired()
             {
-                _plugin.Puts($"Weapon OnWeaponFired()");
                 _mag.UseAmmo();
             }
 
@@ -1319,6 +1317,7 @@ namespace Oxide.Plugins
 
             {946782998, new MagazineInfo(946782998, "25Rnd MP5 Magazine", 25, AmmoType.Ammo_Pistol, 3, 2.0f, WeaponType.MP5) },
             {946783337, new MagazineInfo(946783337, "45Rnd MP5 Magazine", 45, AmmoType.Ammo_Pistol, 3, 2.0f, WeaponType.MP5) },
+            {946784370, new MagazineInfo(946784370, "20Rnd Thompson Magazine", 20, AmmoType.Ammo_Pistol, 3, 2.0f, WeaponType.Thompson) },//UMP Mag
 
             //Unused
             //{946784370, new MagazineInfo(946784370, "25Rnd UMP Magazine", 25, AmmoType.Ammo_Pistol, 3, 2.0f, WeaponType.MP5) },
@@ -1339,7 +1338,8 @@ namespace Oxide.Plugins
 
         private static Dictionary<ulong, AmmoInfo> AmmoDefinitions = new Dictionary<ulong, AmmoInfo>()
         {
-            {942706838u, new AmmoInfo(942706838u, "Buckshot", "ammo.shotgun", 32, AmmoType.Ammo_Buckshot) },
+            {942706838u, new AmmoInfo(942706838u, "12 Gauge Buckshot", "ammo.shotgun", 32, AmmoType.Ammo_Buckshot) },
+            {942706839u, new AmmoInfo(942706839u, "12 Gauge Slug", "ammo.shotgun.slug", 32, AmmoType.Ammo_Slug) },
             {942708393u, new AmmoInfo(942708393u, "5.56 Rifle Ammo", "ammo.rifle", 120, AmmoType.Ammo_Rifle) },
             {943402758u, new AmmoInfo(943402758u, "9mm Pistol Ammo", "ammo.pistol", 100, AmmoType.Ammo_Pistol) },
         };

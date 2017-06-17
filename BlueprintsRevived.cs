@@ -2199,7 +2199,7 @@ namespace Oxide.Plugins
             {
                 panel = new CuiImageComponent
                 {
-                    Color = color
+                    Color = color,
                 };
 
                 Element.Components.Insert(0, panel);
