@@ -163,6 +163,20 @@ namespace Oxide.Plugins
             public ItemAmount ResultItem { get; set; }
             public float CraftTime { get; set; }
 
+            public CraftRecipe()
+            {
+
+            }
+
+            public CraftRecipe(string itemName, float craftTime, string description, string productShortname, int productAmount, ulong productSkin, params ItemAmount[] ingredients)
+            {
+                ItemName = itemName;
+                CraftTime = craftTime;
+                Description = description;
+                ResultItem = new ItemAmount(productShortname, productAmount, productSkin);
+                RequiredIngredients.AddRange(ingredients);
+            }
+
             public bool HasItems(BasePlayer player, int amount)
             {
                 if (amount > 10000 || amount < 1)
@@ -181,6 +195,11 @@ namespace Oxide.Plugins
                 }
                 return true;
             }
+
+            public void AddIngredient(string shortname, int amount = 1, ulong skin = 0)
+            {
+                RequiredIngredients.Add(new ItemAmount(shortname, amount, skin));
+            }
         }
 
         public class ItemAmount
@@ -188,6 +207,18 @@ namespace Oxide.Plugins
             public string shortname { get; set; }
             public int amount { get; set; }
             public ulong skinID { get; set; }
+
+            public ItemAmount()
+            {
+
+            }
+
+            public ItemAmount(string shortname, int amount = 1, ulong skinID = 0)
+            {
+                this.shortname = shortname;
+                this.amount = amount;
+                this.skinID = skinID;
+            }
 
             public int ItemID()
             {
@@ -297,8 +328,9 @@ namespace Oxide.Plugins
 
         public class ModSettings
         {
+            public string Identifier { get; set; }
             public string PluginName { get; set; }
-            public List<CraftRecipe> CustomRecipes { get; set; } = new List<CraftRecipe>();
+            public List<CraftRecipe> Recipes { get; set; } = new List<CraftRecipe>();
             public int Index { get; set; }
         }
 
@@ -313,12 +345,15 @@ namespace Oxide.Plugins
             private UIPanel ItemGrid { get; set; }
             private UIPanel ItemDescription { get; set; }
             private UILabel ItemAmountLabel { get; set; }
+            private UIButton ExitButton { get; set; }
             private List<UIBaseElement> RequiredIngredients { get; set; } = new List<UIBaseElement>();
             private Timer _timer { get; set; }
             //private UIPanel CraftTimePanel { get; set; }
             //private UIPanel MainPage { get; set; }
 
-            private List<ModSettings> Mods { get; set; } = new List<ModSettings>();
+            private List<ModSettings> Mods { get { return _mods; } }
+
+            private List<ModSettings> _mods = new List<ModSettings>();
             private int _itemsPerPage = 0;
 
             public CraftMenuController()
@@ -328,7 +363,7 @@ namespace Oxide.Plugins
                 Mods.Add(new ModSettings()
                 {
                     PluginName = "TestPlugin",
-                    CustomRecipes = new List<CraftRecipe>()
+                    Recipes = new List<CraftRecipe>()
                     {
                         new CraftRecipe()
                         {
@@ -382,114 +417,108 @@ namespace Oxide.Plugins
                         {
                              CraftTime = 30f, 
                              ItemName = "5Rnd Bolt Clip",
-                             ResultItem = new ItemAmount()
-                             {
-                                 amount = 1,
-                                 shortname = "pistol.eoka",
-                                 skinID = 946779217,
-                             },
+                             ResultItem = new ItemAmount("pistol.eoka", 1, 946779217),
                              Description = "A 5 Round Clip for the bolt action rifle.",
                              RequiredIngredients = new List<ItemAmount>()
                              {
-                                 new ItemAmount()
-                                 {
-                                     amount = 100,
-                                     shortname = "wood",
-                                     skinID = 0,
-                                 },
-                                 new ItemAmount()
-                                 {
-                                     amount = 500,
-                                     shortname = "metal.fragments",
-                                     skinID = 0,
-                                 }
+                                 new ItemAmount("wood", 100),
+                                 new ItemAmount("metal.fragments", 500),
                              },
                         }
                     },
                 });
 
-                Mods.Add(new ModSettings()
-                {
-                    PluginName = "TestPlugin2",
-                    CustomRecipes = new List<CraftRecipe>()
-                    {
-                        new CraftRecipe()
-                        {
-                            CraftTime = 1f,
-                            ItemName = "TestItem",
-                            Description = "Test Description",
-                            ResultItem= new ItemAmount()
-                            {
-                                amount = 5,
-                                shortname = "water",
-                                skinID = 0,
-                            },
-                            RequiredIngredients = new List<ItemAmount>()
-                            {
-                                new ItemAmount()
-                                {
-                                    amount = 1,
-                                    skinID = 0,
-                                    shortname = "wood",
-                                }
-                            },
-                        },
-                    },
-                });
-
-                Mods.Add(new ModSettings()
-                {
-                    PluginName = "TestPlugin #3",
-                    CustomRecipes = new List<CraftRecipe>()
-                    {
-                        new CraftRecipe()
-                        {
-                            CraftTime = 1f,
-                            ItemName = "TestItem",
-                            Description = "Test Description",
-                            ResultItem= new ItemAmount()
-                            {
-                                amount = 5,
-                                shortname = "water",
-                                skinID = 0,
-                            },
-                            RequiredIngredients = new List<ItemAmount>()
-                            {
-                                new ItemAmount()
-                                {
-                                    amount = 1,
-                                    skinID = 0,
-                                    shortname = "wood",
-                                }
-                            },
-                        },
-                    },
-                });
-
-                foreach(var mod in Mods)
-                {
-                    foreach(var recipe in mod.CustomRecipes)
-                    {
-                        if (GetItemURL(recipe.ResultItem.shortname, recipe.ResultItem.skinID) != "39274839")
-                        {
-                            continue;
-                        }
-                        GetSteamWorkshopURL(recipe.ResultItem.shortname, recipe.ResultItem.skinID);
-                    }
-                }
-
-                //TODO: Load mods
-
                 SetupUI();
 
+                foreach (var plugin in Interface.Oxide.RootPluginManager.GetPlugins())
+                {
+                    OnPluginAdded(plugin);
+                }
+
+                Interface.Oxide.RootPluginManager.OnPluginAdded += OnPluginAdded;
+                Interface.Oxide.RootPluginManager.OnPluginRemoved += OnPluginRemoved;
+
+                foreach (var mod in Mods)
+                {
+                    SetupImages(mod);
+                }
+
                 _timer = _plugin.timer.Every(0.1f, TimerLoop);
+            }
+
+            private void SetupImages(ModSettings mod)
+            {
+                foreach (var recipe in mod.Recipes)
+                {
+                    if (GetItemURL(recipe.ResultItem.shortname, recipe.ResultItem.skinID) != "39274839")
+                    {
+                        continue;
+                    }
+                    GetSteamWorkshopURL(recipe.ResultItem.shortname, recipe.ResultItem.skinID);
+                }
+            }
+
+            private void OnPluginAddedOrRemoved()
+            {
+                //TODO: Fix any changes based on a mod's setings being added or removed
+                MainPanel.HideAll();
+                ExitButton.HideAll(); //TODO: Combine all these elements under one central base element
+                PluginNamePanel.HideAll(); //TODO: Update craft grid without hiding for all players
+                _mods = _mods.OrderBy(x=>x.PluginName).ToList();
+                foreach (var mod in _mods)
+                {
+                    mod.Recipes = mod.Recipes.OrderBy(x => x.ItemName).ToList();
+                }
+                _plugin.Puts($"{Mods.Count}");
+            }
+
+            private void OnPluginAdded(Core.Plugins.Plugin plugin)
+            {
+                var response = plugin.Call("GetCraftingRecipes") as string;
+                if (response == null)
+                {
+                    return;
+                }
+                ModSettings pluginSettings;
+                try
+                {
+                    pluginSettings = JsonConvert.DeserializeObject<ModSettings>(response);
+                }
+                catch
+                {
+                    return;
+                }
+                if (pluginSettings == null)
+                {
+                    //_plugin.Puts($"OnPluginAdded({plugin.Name})");
+                    return;
+                }
+                _plugin.Puts($"Loaded Mod for {plugin.Name}");
+                if (pluginSettings.PluginName == "" || pluginSettings.PluginName == null)
+                {
+                    pluginSettings.PluginName = plugin.Name;
+                }
+                pluginSettings.Identifier = $"{plugin.Name}{plugin.Author}";
+                Mods.Add(pluginSettings);
+                SetupImages(pluginSettings);
+                _plugin.Puts(JsonConvert.SerializeObject(pluginSettings));
+                OnPluginAddedOrRemoved();
+            }
+
+            private void OnPluginRemoved(Core.Plugins.Plugin plugin)
+            {
+                Mods.RemoveAll(x => x.Identifier == $"{plugin.Name}{plugin.Author}");
+                OnPluginAddedOrRemoved();
             }
 
             public void OnUnload()
             {
                 _timer?.Destroy();
+                Interface.Oxide.RootPluginManager.OnPluginAdded -= OnPluginAdded;
+                Interface.Oxide.RootPluginManager.OnPluginRemoved -= OnPluginRemoved;
                 MainPanel.HideAll();
                 PluginNamePanel.HideAll();
+                ExitButton.HideAll();
                 //CraftTimePanel.HideAll();
             }
 
@@ -506,6 +535,7 @@ namespace Oxide.Plugins
 
                 MainPanel.Show(player);
                 PluginNamePanel.Show(player);
+                ExitButton.Show(player);
             }
 
             public void HidePlayer(BasePlayer player)
@@ -517,7 +547,7 @@ namespace Oxide.Plugins
                 data.SelectedItemIndex = -1;
                 MainPanel.Hide(player);
                 PluginNamePanel.Hide(player);
-
+                ExitButton.Hide(player);
             }
 
             public void ShowIcon(BasePlayer player)
@@ -570,6 +600,12 @@ namespace Oxide.Plugins
 
                 Vector2 craftTimePos = new Vector2(0.85f, 0.1525f);
 
+                ExitButton = new UIButton(new Vector2(0.93f, 0.93f), new Vector2(0.96f, 0.96f), "X", "1 0 0 1", "1 1 1 1", 20);
+                ExitButton.AddCallback((player) =>
+                {
+                    HidePlayer(player);
+                });
+
                 //CraftTimePanel = new UIPanel(craftTimePos, 0.13f, 0.039f, null, "1 1 0 1");
 
                 /*CraftTimePanel.conditionalPosition = delegate (BasePlayer player)
@@ -613,23 +649,41 @@ namespace Oxide.Plugins
 
             private void SetupUI_ModList()
             {
-                int index = 0;
                 float height = 0.08f;
-                foreach(var mod in Mods)
+                for (int i = 0; i< Mathf.FloorToInt((1f / height)); i++)
                 {
-                    mod.Index = index;
+                    int index = i;
                     UIButton modPanel = new UIButton(new Vector2(0f, 1f - (((index + 1) * height) - 0.01f)), new Vector2(0.125f, 1f - (index * height)), "",  "1 0 0 0.7", parent: MainPanel);
                     modPanel.AddCallback((player)=>
                     {
-                        _plugin.Puts($"Clicked mod {mod.Index}!");
-                        SetModPage(player, mod.Index);
+                        _plugin.Puts($"Clicked mod {index} / {Mods.Count}!");
+                        SetModPage(player, index);
                     });
 
-                    UILabel modName = new UILabel(new Vector2(0.03f, 0f), new Vector2(1f, 1f), mod.PluginName, parent: modPanel, alignment: TextAnchor.MiddleLeft);
+                    modPanel.conditionalShow = delegate (BasePlayer player)
+                    {
+                        return index < Mods.Count;
+                    };
 
-                    UILabel recipeCount = new UILabel(new Vector2(0.03f, 0f), new Vector2(0.97f, 1f), mod.CustomRecipes.Count.ToString(), parent: modPanel, alignment: TextAnchor.MiddleRight);
+                    UILabel modName = new UILabel(new Vector2(0.03f, 0f), new Vector2(1f, 1f), "", parent: modPanel, alignment: TextAnchor.MiddleLeft);
+                    modName.variableText = delegate (BasePlayer player)
+                    {
+                        if (index > Mods.Count - 1 || index < 0)
+                        {
+                            return "";
+                        }
+                        return Mods[index].PluginName;
+                    };
 
-                    index++;
+                    UILabel recipeCount = new UILabel(new Vector2(0.03f, 0f), new Vector2(0.97f, 1f), "", parent: modPanel, alignment: TextAnchor.MiddleRight);
+                    recipeCount.variableText = delegate (BasePlayer player)
+                    {
+                        if (index > Mods.Count - 1 || index < 0)
+                        {
+                            return "";
+                        }
+                        return Mods[index].Recipes.Count.ToString();
+                    };
                 }
             }
 
@@ -648,7 +702,7 @@ namespace Oxide.Plugins
                         Vector2 size = new Vector2(1f / width, 1f / height);
                         Vector2 pos = new Vector2(x * size.x, 1f -(y + 1) * size.y);
                         UIRawImage itemIcon = new UIRawImage(pos + new Vector2(0.005f, 0f), pos + size * 0.95f, ItemGrid);
-                        UIButton itemButton = new UIButton(pos + new Vector2(0.005f, 0f),pos + size * 0.95f, $"", "0 1 1 0.01", fontSize: 12, parent: ItemGrid);
+                        UIButton itemButton = new UIButton(pos + new Vector2(0.005f, 0f),pos + size * 0.95f, $"", "0 1 1 0.00001", fontSize: 12, parent: ItemGrid);
                         //UIRawImage itemIcon = new UIRawImage(new Vector2(0f, 0f), new Vector2(1f, 1f), itemButton);
                         
                         itemIcon.variablePNGURL = delegate (BasePlayer player)
@@ -663,11 +717,11 @@ namespace Oxide.Plugins
                             {
                                 return "";
                             }
-                            if (index < 0 || index > mod.CustomRecipes.Count - 1)
+                            if (index < 0 || index > mod.Recipes.Count - 1)
                             {
                                 return "";
                             }
-                            var recipe = mod.CustomRecipes[index];
+                            var recipe = mod.Recipes[index];
                             return GetItemURL(recipe.ResultItem.shortname, recipe.ResultItem.skinID);
                         };
                         itemButton.AddCallback((player) =>
@@ -683,7 +737,7 @@ namespace Oxide.Plugins
                             {
                                 return false;
                             }
-                            if (mod.CustomRecipes.Count <= index)
+                            if (mod.Recipes.Count <= index)
                             {
                                 return false;
                             }
@@ -749,9 +803,25 @@ namespace Oxide.Plugins
 
                 #endregion
 
+                #region Item Icon
+                UIRawImage itemIcon = new UIRawImage(new Vector2(0.05f, 0.91f), 0.150f, 0.150f, ItemDescription);
+                itemIcon.variablePNGURL = delegate (BasePlayer player)
+                {
+                    var data = GetPlayerData(player);
+                    var recipe = GetRecipe(data);
+                    if (recipe == null)
+                    {
+                        return "";
+                    }
+                    return GetItemURL(recipe.ResultItem.shortname, recipe.ResultItem.skinID);
+                };
+
+
+                #endregion
+
                 #region Name and Description
 
-                UILabel itemName = new UILabel(new Vector2(0f, resultAmountPanel.min.y), new Vector2(1f, craftTimePanel.max.y), "Item Name Here", 20, "0.9 0.9 0.9  s 1", ItemDescription);
+                UILabel itemName = new UILabel(new Vector2(0.2f, resultAmountPanel.min.y), new Vector2(0.80f, craftTimePanel.max.y), "Item Name Here", 20, "0.9 0.9 0.9  s 1", ItemDescription);
                 itemName.variableText = delegate (BasePlayer player)
                 {
                     var data = GetPlayerData(player);
@@ -795,6 +865,16 @@ namespace Oxide.Plugins
                 {
                     int index = i;
                     UIPanel panel = new UIPanel(new Vector2(0.01f, MaxY - height * (i + 1) + 0.005f), new Vector2(0.97f, MaxY - height * i), ItemDescription);
+                    panel.conditionalShow = delegate (BasePlayer player)
+                    {
+                        var data = GetPlayerData(player);
+                        var recipe = GetRecipe(data);
+                        if (recipe == null)
+                        {
+                            return false;
+                        }
+                        return index < recipe.RequiredIngredients.Count;
+                    };
 
                     UILabel requiredAmountPerItem = new UILabel(new Vector2(0f, 0f), new Vector2(0.2f, 1f), "", 12, "1 1 1 1", panel, TextAnchor.MiddleCenter);
                     requiredAmountPerItem.variableText = delegate (BasePlayer player)
@@ -825,7 +905,8 @@ namespace Oxide.Plugins
                         {
                             return "";
                         }
-                        return recipe.RequiredIngredients[index].shortname;
+                        var shortname = recipe.RequiredIngredients[index].shortname;
+                        return ItemManager.itemList.First(x => x.shortname == shortname).displayName.english;
                     };
 
                     UILabel requiredTotalAmount = new UILabel(new Vector2(0.6f, 0f), new Vector2(0.8f, 1f), "", 12, "1 1 1 1", panel, TextAnchor.MiddleCenter);
@@ -1034,11 +1115,11 @@ namespace Oxide.Plugins
                 {
                     return null;
                 }
-                if (playerData.SelectedItemIndex < 0 || playerData.SelectedItemIndex > mod.CustomRecipes.Count - 1)
+                if (playerData.SelectedItemIndex < 0 || playerData.SelectedItemIndex > mod.Recipes.Count - 1)
                 {
                     return null;
                 }
-                return mod.CustomRecipes[playerData.SelectedItemIndex];
+                return mod.Recipes[playerData.SelectedItemIndex];
             }
         }
 
@@ -1544,7 +1625,7 @@ namespace Oxide.Plugins
                 if (variablePNGURL != null)
                 {
                     string url = variablePNGURL.Invoke(player);
-                    if (url == "")
+                    if (string.IsNullOrEmpty(url))
                     {
                         Image.Png = null;
                         Image.Url = null;
@@ -1564,7 +1645,7 @@ namespace Oxide.Plugins
                     if (variablePNG != null)
                     {
                         Image.Png = variablePNG.Invoke(player);
-                        if (Image.Png == "")
+                        if (string.IsNullOrEmpty(Image.Png))
                         {
                             Image.Png = null;
                         }
@@ -1572,7 +1653,7 @@ namespace Oxide.Plugins
                     if (variableURL != null)
                     {
                         Image.Url = variableURL.Invoke(player);
-                        if (Image.Url == "")
+                        if (string.IsNullOrEmpty(Image.Url))
                         {
                             Image.Url = null;
                         }
