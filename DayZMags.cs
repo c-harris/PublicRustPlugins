@@ -1,4 +1,5 @@
 ﻿using Network;
+using Newtonsoft.Json;
 using Oxide.Game.Rust.Cui;
 using System;
 using System.Collections.Generic;
@@ -375,6 +376,14 @@ namespace Oxide.Plugins
                 }
             }
             return null;
+        }
+
+        void OnItemCraftFinished(ItemCraftTask task, Item item)
+        {
+            if (MagazineHelper.IsMagazine(item))
+            {
+                MagazineHelper.InitializeMagazine(item);
+            }
         }
 
         #endregion
@@ -1240,6 +1249,26 @@ namespace Oxide.Plugins
                 }
                 return data;
             }
+
+            public static void InitializeMagazine(Item item)
+            {
+                var info = GetMagazineInfo(item);
+                if (info == null)
+                {
+                    return;
+                }
+                item.name = info._name;
+                var weapon = item.GetHeldEntity() as BaseProjectile;
+                weapon.primaryMagazine.capacity = info._capacity;
+                weapon.primaryMagazine.contents = 0;
+                item.condition = 1;
+                item.info.condition.max = 10000;
+                item.maxCondition = item.info.condition.max;
+                if (item.contents != null)
+                {
+                    item.contents.capacity = 0;
+                }
+            }
         }
 
         public static class PlayerHelper //Not used yet
@@ -1251,6 +1280,241 @@ namespace Oxide.Plugins
         public static HashSet<ulong> AmmoSkinIDs;
         public static HashSet<ulong> WrappedAmmoSkinIDs;
         public static HashSet<ulong> MagazineSkinIDs;
+
+        #region Crafting Recipes
+
+        #region Recipe Classes
+
+        public class CraftRecipe
+        {
+            public List<ItemAmount> RequiredIngredients { get; set; } = new List<ItemAmount>();
+            public string ItemName { get; set; }
+            public string Description { get; set; }
+            public ItemAmount ResultItem { get; set; }
+            public float CraftTime { get; set; }
+
+            public CraftRecipe()
+            {
+
+            }
+
+            public CraftRecipe(string itemName, float craftTime, string description, string productShortname, int productAmount, ulong productSkin, params ItemAmount[] ingredients)
+            {
+                ItemName = itemName;
+                CraftTime = craftTime;
+                Description = description;
+                ResultItem = new ItemAmount(productShortname, productAmount, productSkin);
+                RequiredIngredients.AddRange(ingredients);
+            }
+
+            public bool HasItems(BasePlayer player, int amount)
+            {
+                if (amount > 10000 || amount < 1)
+                {
+                    _plugin.PrintError($"HasItems() out of range! {amount}");
+                    return false;
+                }
+                Item[] items = player.inventory.AllItems();
+
+                foreach (var item in RequiredIngredients)
+                {
+                    if (items.Where(x => x.skin == item.skinID && x.info.shortname == item.shortname).Sum(x => x.amount) < item.amount * amount)
+                    {
+                        return false;
+                    }
+                }
+                return true;
+            }
+
+            public void AddIngredient(string shortname, int amount = 1, ulong skin = 0)
+            {
+                RequiredIngredients.Add(new ItemAmount(shortname, amount, skin));
+            }
+        }
+
+        public class ItemAmount
+        {
+            public string shortname { get; set; }
+            public int amount { get; set; }
+            public ulong skinID { get; set; }
+
+            public ItemAmount()
+            {
+
+            }
+
+            public ItemAmount(string shortname, int amount = 1, ulong skinID = 0)
+            {
+                this.shortname = shortname;
+                this.amount = amount;
+                this.skinID = skinID;
+            }
+
+            public int ItemID()
+            {
+                var item = ItemManager.itemList.FirstOrDefault(x => x.shortname == shortname);
+                if (item == null)
+                {
+                    return -1;
+                }
+                return item.itemid;
+            }
+        }
+
+        #endregion
+
+        public class ModSettings
+        {
+            public string PluginName { get; set; }
+            public List<CraftRecipe> Recipes = new List<CraftRecipe>();
+
+            public CraftRecipe NewRecipe()
+            {
+                var recipe = new CraftRecipe();
+                Recipes.Add(recipe);
+                return recipe;
+            }
+
+            public CraftRecipe AddRecipe(CraftRecipe recipe)
+            {
+                Recipes.Add(recipe);
+                return recipe;
+            }
+        }
+
+        private string GetCraftingRecipes()
+        {
+            var mod = new ModSettings();
+            mod.Recipes = new List<CraftRecipe>()
+            {
+                new CraftRecipe()
+                {
+                    CraftTime = 20f,
+                    ItemName = "5Rnd Bolt Clip",
+                    ResultItem = new ItemAmount("pistol.eoka", 1, 946779217),
+                    Description = "A 5 Round Clip for the bolt action rifle.",
+                    RequiredIngredients = new List<ItemAmount>()
+                    {
+                        new ItemAmount("wood", 100),
+                        new ItemAmount("metal.fragments", 500),
+                    },
+                },
+                new CraftRecipe()
+                {
+                    CraftTime = 30f,
+                    ItemName = "30Rnd AK Magazine",
+                    ResultItem = new ItemAmount("pistol.eoka", 1, 946778674),
+                    Description = "A magazine for the ak47 assault rifle. Holds 30 rifle rounds.",
+                    RequiredIngredients = new List<ItemAmount>()
+                    {
+                        new ItemAmount("wood", 100),
+                        new ItemAmount("metal.fragments", 500),
+                    },
+                },
+                new CraftRecipe()
+                {
+                    CraftTime = 20f,
+                    ItemName = "10Rnd Semi-Auto Pistol Magazine",
+                    ResultItem = new ItemAmount("pistol.eoka", 1, 946783613),
+                    Description = "A traditional magazine for the semi-auto pistol. Holds 10 pistol rounds.",
+                    RequiredIngredients = new List<ItemAmount>()
+                    {
+                        new ItemAmount("wood", 100),
+                        new ItemAmount("metal.fragments", 500),
+                    },
+                },
+                new CraftRecipe()
+                {
+                    CraftTime = 15f,
+                    ItemName = "Python Speedloader",
+                    ResultItem = new ItemAmount("pistol.eoka", 1, 946784019),
+                    Description = "A six round speedloader for a python revolver.",
+                    RequiredIngredients = new List<ItemAmount>()
+                    {
+                        new ItemAmount("wood", 200),
+                        new ItemAmount("metal.fragments", 150),
+                    },
+                },
+                new CraftRecipe()
+                {
+                    CraftTime = 15f,
+                    ItemName = "5Rnd Shotgun Magazine",
+                    ResultItem = new ItemAmount("pistol.eoka", 1, 941402580u),
+                    Description = "A magazine that attaches onto the pump shotgun. Holds 5 rounds of any 12 Gauge ammunition.",
+                    RequiredIngredients = new List<ItemAmount>()
+                    {
+                        new ItemAmount("wood", 200),
+                        new ItemAmount("metal.fragments", 100),
+                    },
+                },
+                new CraftRecipe()
+                {
+                    CraftTime = 20f,
+                    ItemName = "8Rnd Shotgun Magazine",
+                    ResultItem = new ItemAmount("pistol.eoka", 1, 941400934u),
+                    Description = "A magazine that attaches onto the pump shotgun. Holds 8 rounds of any 12 Gauge ammunition.",
+                    RequiredIngredients = new List<ItemAmount>()
+                    {
+                        new ItemAmount("wood", 200),
+                        new ItemAmount("metal.fragments", 400),
+                    },
+                },
+                new CraftRecipe()
+                {
+                    CraftTime = 20f,
+                    ItemName = "MP5 Magazine (25 Rounds)",
+                    ResultItem = new ItemAmount("pistol.eoka", 1, 946782998),
+                    Description = "A standard magazine for the MP5. Holds 25 pistol rounds.",
+                    RequiredIngredients = new List<ItemAmount>()
+                    {
+                        new ItemAmount("wood", 400),
+                        new ItemAmount("metal.fragments", 300),
+                    },
+                },
+                new CraftRecipe()
+                {
+                    CraftTime = 20f,
+                    ItemName = "Thompson Magazine (20 Rounds)",
+                    ResultItem = new ItemAmount("pistol.eoka", 1, 946784370),
+                    Description = "The standard magazine for the thompson. Holds 20 pistol rounds.",
+                    RequiredIngredients = new List<ItemAmount>()
+                    {
+                        new ItemAmount("wood", 400),
+                        new ItemAmount("metal.fragments", 250),
+                    },
+                },
+                new CraftRecipe()
+                {
+                    CraftTime = 20f,
+                    ItemName = "STANAG Magazine",
+                    ResultItem = new ItemAmount("pistol.eoka", 1, 939979493u),
+                    Description = "A STANAG (STANdard-AGreement) magazine, a common sight for NATO troops. Holds 30 rifle rounds, fits on the LR-300 assault rifle and M249 machine gun.",
+                    RequiredIngredients = new List<ItemAmount>()
+                    {
+                        new ItemAmount("wood", 400),
+                        new ItemAmount("metal.fragments", 1000),
+                        new ItemAmount("metal.refined", 10),
+                        new ItemAmount("cloth", 50),
+                    },
+                },
+                new CraftRecipe()
+                {
+                    CraftTime = 20f,
+                    ItemName = "Double-Barrel Quickloader",
+                    ResultItem = new ItemAmount("pistol.eoka", 1, 946781016),
+                    Description = "A quickloader for the double barrel. Holds two rounds of any 12 Gauge shotgun ammunition.",
+                    RequiredIngredients = new List<ItemAmount>()
+                    {
+                        new ItemAmount("wood", 400),
+                        new ItemAmount("metal.fragments", 400),
+                    },
+                },
+            };
+
+            return JsonConvert.SerializeObject(mod);
+        }
+
+        #endregion
 
         #region Config values
 
