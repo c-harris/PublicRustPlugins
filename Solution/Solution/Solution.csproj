@@ -245,6 +245,9 @@
     <Compile Include="..\..\QueueHolder.cs">
       <Link>QueueHolder.cs</Link>
     </Compile>
+    <Compile Include="..\..\RangeFinder.cs">
+      <Link>RangeFinder.cs</Link>
+    </Compile>
     <Compile Include="..\..\RecycleTweaks.cs">
       <Link>RecycleTweaks.cs</Link>
     </Compile>

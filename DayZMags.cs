@@ -1390,7 +1390,7 @@ namespace Oxide.Plugins
                 new CraftRecipe()
                 {
                     CraftTime = 20f,
-                    ItemName = "5Rnd Bolt Clip",
+                    ItemName = "Bolt Clip (5 Rounds)",
                     ResultItem = new ItemAmount("pistol.eoka", 1, 946779217),
                     Description = "A 5 Round Clip for the bolt action rifle.",
                     RequiredIngredients = new List<ItemAmount>()
@@ -1402,7 +1402,7 @@ namespace Oxide.Plugins
                 new CraftRecipe()
                 {
                     CraftTime = 30f,
-                    ItemName = "30Rnd AK Magazine",
+                    ItemName = "AK Magazine (30 Rounds)",
                     ResultItem = new ItemAmount("pistol.eoka", 1, 946778674),
                     Description = "A magazine for the ak47 assault rifle. Holds 30 rifle rounds.",
                     RequiredIngredients = new List<ItemAmount>()
@@ -1414,7 +1414,7 @@ namespace Oxide.Plugins
                 new CraftRecipe()
                 {
                     CraftTime = 20f,
-                    ItemName = "10Rnd Semi-Auto Pistol Magazine",
+                    ItemName = "Semi-Pistol Magazine (10 Rounds)",
                     ResultItem = new ItemAmount("pistol.eoka", 1, 946783613),
                     Description = "A traditional magazine for the semi-auto pistol. Holds 10 pistol rounds.",
                     RequiredIngredients = new List<ItemAmount>()
@@ -1438,7 +1438,7 @@ namespace Oxide.Plugins
                 new CraftRecipe()
                 {
                     CraftTime = 15f,
-                    ItemName = "5Rnd Shotgun Magazine",
+                    ItemName = "Shotgun Magazine (5 Rounds)",
                     ResultItem = new ItemAmount("pistol.eoka", 1, 941402580u),
                     Description = "A magazine that attaches onto the pump shotgun. Holds 5 rounds of any 12 Gauge ammunition.",
                     RequiredIngredients = new List<ItemAmount>()
@@ -1450,7 +1450,7 @@ namespace Oxide.Plugins
                 new CraftRecipe()
                 {
                     CraftTime = 20f,
-                    ItemName = "8Rnd Shotgun Magazine",
+                    ItemName = "Shotgun Magazine (8 Rounds)",
                     ResultItem = new ItemAmount("pistol.eoka", 1, 941400934u),
                     Description = "A magazine that attaches onto the pump shotgun. Holds 8 rounds of any 12 Gauge ammunition.",
                     RequiredIngredients = new List<ItemAmount>()
@@ -1507,6 +1507,43 @@ namespace Oxide.Plugins
                     {
                         new ItemAmount("wood", 400),
                         new ItemAmount("metal.fragments", 400),
+                    },
+                },
+                new CraftRecipe()
+                {
+                    CraftTime = 20f,
+                    ItemName = "CMAG (10 Rounds)",
+                    ResultItem = new ItemAmount("pistol.eoka", 1, 941865444u),
+                    Description = "A cheap aftermarket magazine which can fit multiple calibers of ammo. Low capacity, however it is quick and easy to refill. Fits on any assault rifle and machine-gun.",
+                    RequiredIngredients = new List<ItemAmount>()
+                    {
+                        new ItemAmount("wood", 100),
+                        new ItemAmount("metal.fragments", 100),
+                    },
+                },
+                new CraftRecipe()
+                {
+                    CraftTime = 20f,
+                    ItemName = "CMAG (20 Rounds)",
+                    ResultItem = new ItemAmount("pistol.eoka", 1, 941868420u),
+                    Description = "An aftermarket magazine which can fit multiple calibers of ammo. Medium capacity but stil quicker to fill than an average-sized magazine. Fits on any assault rifle and machine-gun.",
+                    RequiredIngredients = new List<ItemAmount>()
+                    {
+                        new ItemAmount("wood", 400),
+                        new ItemAmount("metal.fragments", 400),
+                    },
+                },
+                new CraftRecipe()
+                {
+                    CraftTime = 20f,
+                    ItemName = "CMAG (30 Rounds)",
+                    ResultItem = new ItemAmount("pistol.eoka", 1, 941869375u),
+                    Description = "An expensive aftermarket magazine which can fit multiple calibers of ammo. Average capacity, but slower to refil than an average magazine. Fits on any assault rifle and machine-gun: exluding the semi-automatic rifle.",
+                    RequiredIngredients = new List<ItemAmount>()
+                    {
+                        new ItemAmount("wood", 400),
+                        new ItemAmount("metal.fragments", 1000),
+                        new ItemAmount("metal.refined", 5),
                     },
                 },
             };
@@ -1730,7 +1767,6 @@ namespace Oxide.Plugins
                 player.GiveItem(ammo.CreateItem(ammo._stackLimit * 10));   
             }
         }
-
 
         #endregion
 

@@ -296,6 +296,10 @@ namespace Oxide.Plugins
 
             public ItemChunk GetGrid(Vector3 position, bool createIfEmpty = true)
             {
+                if (itemGrid == null)
+                {
+                    return null;
+                }
                 int x = Mathf.Clamp(((int)position.x + halfSize) / GRID_SIZE, 0, gridArraySize - 1);
                 int y = Mathf.Clamp(((int)position.z + halfSize) / GRID_SIZE, 0, gridArraySize - 1);
                 //_plugin.Puts($"({x},{y})");
@@ -324,7 +328,7 @@ namespace Oxide.Plugins
 
             public void OnItemKilled(DroppedItem item)
             {
-                GetGrid(item.transform.position).RemoveItem(item);
+                GetGrid(item.transform.position)?.RemoveItem(item);
                 items.Remove(item);
             }
 

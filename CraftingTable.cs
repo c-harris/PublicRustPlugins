@@ -196,6 +196,30 @@ namespace Oxide.Plugins
                 return true;
             }
 
+            public List<Item> TakeItems(BasePlayer player, int amount)
+            {
+                List<Item> items = new List<Item>();
+                foreach(var ingredient in RequiredIngredients)
+                {
+                    int amountLeft = ingredient.amount * amount;
+                    foreach(var item in player.inventory.AllItems())
+                    {
+                        if (item.skin == ingredient.skinID && item.info.shortname == ingredient.shortname)
+                        {
+                            if (item.amount > amountLeft)
+                            {
+                                item.UseItem(amountLeft);
+                                amountLeft = 0;
+                                break;
+                            }
+                            item.Remove(0f);
+                        }
+                    }
+                    items.Add(ItemManager.CreateByName(ingredient.shortname, ingredient.amount * amount, ingredient.skinID));
+                }
+                return items;
+            }
+
             public void AddIngredient(string shortname, int amount = 1, ulong skin = 0)
             {
                 RequiredIngredients.Add(new ItemAmount(shortname, amount, skin));
@@ -600,7 +624,7 @@ namespace Oxide.Plugins
 
                 Vector2 craftTimePos = new Vector2(0.85f, 0.1525f);
 
-                ExitButton = new UIButton(new Vector2(0.93f, 0.93f), new Vector2(0.96f, 0.96f), "X", "1 0 0 1", "1 1 1 1", 20);
+                ExitButton = new UIButton(new Vector2(0.92f, 0.90f), new Vector2(0.95f, 0.93f), "X", "1 0 0 1", "1 1 1 1", 20);
                 ExitButton.AddCallback((player) =>
                 {
                     HidePlayer(player);
@@ -1067,6 +1091,7 @@ namespace Oxide.Plugins
             private void QueueRecipe(BasePlayer player, CraftRecipe recipe, int amount)
             {
                 var crafter = player.inventory.crafting;
+
                 //TODO: Collect ingredients
                 //TODO: Put taken items into task
                 //TODO: Need to create a ItemBlueprint per custom recipe (or do something custom)
@@ -1078,6 +1103,7 @@ namespace Oxide.Plugins
                 task.amount = amount;
                 task.blueprint = ItemManager.bpList.FirstOrDefault(x => x.targetItem.shortname == recipe.ResultItem.shortname);
                 task.skinID = (int)recipe.ResultItem.skinID;
+                task.takenItems = recipe.TakeItems(player, amount);
 
                 crafter.queue.Enqueue(task);
                 if (task.owner != null)
