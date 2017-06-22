@@ -268,5 +268,36 @@
     </Compile>
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
+  <ItemGroup>
+    <Content Include="OxideReferences\Assembly-CSharp.dll" />
+    <Content Include="OxideReferences\Facepunch.Console.dll" />
+    <Content Include="OxideReferences\Facepunch.Rcon.dll" />
+    <Content Include="OxideReferences\I18N.dll" />
+    <Content Include="OxideReferences\I18N.West.dll" />
+    <Content Include="OxideReferences\Mono.Cecil.dll" />
+    <Content Include="OxideReferences\Mono.Cecil.Mdb.dll" />
+    <Content Include="OxideReferences\Mono.Cecil.Pdb.dll" />
+    <Content Include="OxideReferences\Mono.Cecil.Rocks.dll" />
+    <Content Include="OxideReferences\Mono.Data.Tds.dll" />
+    <Content Include="OxideReferences\Mono.Posix.dll" />
+    <Content Include="OxideReferences\Mono.Security.dll" />
+    <Content Include="OxideReferences\MySql.Data.dll" />
+    <Content Include="OxideReferences\Oxide.Core.CSharp.dll" />
+    <Content Include="OxideReferences\Oxide.Core.dll" />
+    <Content Include="OxideReferences\Oxide.Core.MySql.dll" />
+    <Content Include="OxideReferences\Oxide.Core.SQLite.dll" />
+    <Content Include="OxideReferences\Oxide.Core.Unity.dll" />
+    <Content Include="OxideReferences\Oxide.Game.Rust.dll" />
+    <Content Include="OxideReferences\protobuf-net.dll" />
+    <Content Include="OxideReferences\System.Configuration.Install.dll" />
+    <Content Include="OxideReferences\System.Data.dll" />
+    <Content Include="OxideReferences\System.Data.SQLite.dll" />
+    <Content Include="OxideReferences\System.Drawing.dll" />
+    <Content Include="OxideReferences\System.Runtime.Serialization.dll" />
+    <Content Include="OxideReferences\System.Transactions.dll" />
+    <Content Include="OxideReferences\System.Xml.dll" />
+    <Content Include="OxideReferences\System.Xml.Linq.dll" />
+    <Content Include="OxideReferences\websocket-sharp.dll" />
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>
