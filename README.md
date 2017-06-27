@@ -3,14 +3,15 @@
 1. [Anti Foundation Stack](#anti-foundation-stack)
 2. [Blueprints Revived](#blueprints-revived)
 3. [Combat Log](#combat-log)
-4. [Craft Queue Saver](#craft-queue-saver)
-5. [(WIP) DayZ Magazines](#dayz-magazines)
-6. [(WIP) Gyro Heli] (#gyro-heli)
-7. [Jake UI Framework](#jake-ui-framework)
-8. [No Despawning](#no-despawning)
-9. [Recycle Tweaks](#recycle-tweaks)
-10. [Visual Debug](#visual-debug)
-11. [Weapons On Back](#weapons-on-back)
+4. [(WIP) Crafting Table] (#crafting-table)
+5. [Craft Queue Saver](#craft-queue-saver)
+6. [(WIP) DayZ Magazines](#dayz-magazines)
+7. [(WIP) Gyro Heli] (#gyro-heli)
+8. [Jake UI Framework](#jake-ui-framework)
+9. [No Despawning](#no-despawning)
+10. [Recycle Tweaks](#recycle-tweaks)
+11. [Visual Debug](#visual-debug)
+12. [Weapons On Back](#weapons-on-back)
 
 # Plugins
 
@@ -71,6 +72,19 @@ Luckily, presents had an "unwrap" and "combine" option, which was good enough to
 ## Combat Log
 
 A SUPER simple plugin, that grabs the combatlog of a player based on steamID. Eventually the plugin will change the way combatlog works, by filtering hits on players, animals, building blocks, heli, etc. (Would only display player attacks, the rest are irrelivant 99% of the time)
+
+## Crafting Table
+
+* Work In Progress
+* [Preview](https://gyazo.com/26afb879c0dff55c20d1f8ed6e1b2d42)
+
+For a long time I have requested custom crafting recipes to no avail. After starting "DayZ Magazines" and the Helicopter mod, it was a certainty that I would need an easy way for players to use non vanilla recipes.
+
+There was a mod that overwrote the vanilla crafting menu, but it was slow, laggy and was broken when key binds couldn't be set by the server. Instead, I decided to make a "crafting table" like minecraft.
+
+I already knew how to give functionality to useless entities via my work with "Blueprints Revived", so I set out to give the useless table a function. Players could walk up the the table and open it up, to reveal a list of mods. Clicking on each mod would show the icons of all items you could craft, and clicking on an icon would show all the details of the crafting recipe in a format similar to the vanilla crafting menu.
+
+It will be released once some more testing is done, and the colors / appearance are tweaked. Bright colors work great for testing, but not all players enjoy it.
 
 ## Craft Queue Saver
 
