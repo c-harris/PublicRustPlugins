@@ -4,11 +4,13 @@
 2. [Blueprints Revived](#blueprints-revived)
 3. [Combat Log](#combat-log)
 4. [Craft Queue Saver](#craft-queue-saver)
-5. [Jake UI Framework](#jake-ui-framework)
-6. [No Despawning](#no-despawning)
-7. [Recycle Tweaks](#recycle-tweaks)
-8. [Visual Debug](#visual-debug)
-9. [Weapons On Back](#weapons-on-back)
+5. [(WIP) DayZ Magazines](#dayz-magazines)
+6. [(WIP) Gyro Heli] (#gyro-heli)
+7. [Jake UI Framework](#jake-ui-framework)
+8. [No Despawning](#no-despawning)
+9. [Recycle Tweaks](#recycle-tweaks)
+10. [Visual Debug](#visual-debug)
+11. [Weapons On Back](#weapons-on-back)
 
 # Plugins
 
@@ -21,7 +23,7 @@ Luckily, this bug has been fixed in the main game.
 
 A simple bug fix to stop players from stacking square foundations inside eachother. [(To prevent this)](https://gyazo.com/8b5b1c10cb8e65da78e4d1258205d8c8)
 
-## Blueprints Revived (The Blueprint System)
+## Blueprints Revived
 
 * [Oxide Listing](http://oxidemod.org/plugins/blueprints-revived.2433/)
 
@@ -76,11 +78,43 @@ A SUPER simple plugin, that grabs the combatlog of a player based on steamID. Ev
 
 Players love to afk craft tons of materials, and leave their computer running. The problem is when they disconnect: they drop their entire crafting queue likely losing their items, or when the server restarts their crafting queue is simply deleted. This plugin serializes their crafting queue, restoring it when they log back in. If they are killed while logged out, their crafting queue will be dropped, and when the server wipes it will clear everyone's crafting queue to prevent people keeping items over wipes.
 
+## DayZ Magazines
+
+* Work-In-Progress
+
+Plugin was inspired by the way weapons work in DayZ. The item icons were also taken from the DayZ Standalone game files. 
+
+Instead of reloading your gun with bullets in your inventory, you need a magazine that fits your specific weapon.
+
+Magazines are filled by dragging bullets into the magazine in your inventory, or using putting magazines and the respective bullets in an auto-filling machine.
+
+The idea of the mod is to promote conservation of ammo, force players to think strategically about their reloads, while adding additional expensive or rare high capacity magazines for weapons. 
+
+It also opens up the possibility of seperate ammo types for weapons. For example, the LR300 could use 5.56mm bullets, the ak47: more expensive 7.62mm, and finally the bolt action and M249 could use expensive 7.62mm X 54mm ammunition. This feature will most likely a configuration option for a hardcore mode.
+
 ## Easy Chat Commands
 
 * [Oxide Listing](http://oxidemod.org/plugins/easychatcommands.2308/)
 
 Need to provide your players a link to your discord, teamspeak, website, etc, but don't want to bother coding? Just add the command and what text it should display when called to a config file, and you are good to go! (Simple Quality of Life utilities for server owners are surprisingly popular.
+
+## Gyro Heli
+
+* Work In Progress
+
+After watching Colon Blow's youtube showcase of a gyrocopter, I was inspired to make a legitimate functional helicopter mod.
+
+As cool as Colon's looked, it was a cheaty way of doing it. He was making the player the parent object and no clipping around the map at a slow speed. Sure, it looks cool in a showcase video but it would be a nightmare to manage as a public plugin.
+
+My approach was having a central entity, adding a rigidbody to it and adding all outer entities as children under it. After adding in some simple helicopter type physics, it was flying more like a real helicopter while staying simple to understand.
+
+A problem I quickly ran into was my choice of entities. Building blocks often refuse to update their position, so they were quickly out of the picture. Wooden signs look great, but they don't render past 40m - 80m depending on the size. This meant you would see players magically floating in the air, as opposed to a helicopter flying. I chose to use XXL paintings as the outer hull as they render at least 400m, so the helicopter is visible from a great distance. 
+
+Other entities will be used to decorate the interior of the helicopteras we only need to see the general shape of it from a distance, not the interior buttons.
+
+I also added in moving, toggleable cargo doors and side doors because they look really cool and should be interesting via gameplay.
+
+Still need to make heli movement smoother, add GUI, and either bind players to certain seats within the heli, or allow walking, jumping and running within the vehicle while it is moving.
 
 ## Jake UI Framework
 
