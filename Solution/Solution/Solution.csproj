@@ -233,6 +233,9 @@
     <Compile Include="..\..\EasyChatCommands.cs">
       <Link>EasyChatCommands.cs</Link>
     </Compile>
+    <Compile Include="..\..\GyroHeli.cs">
+      <Link>GyroHeli.cs</Link>
+    </Compile>
     <Compile Include="..\..\JakeMemoryDebug.cs">
       <Link>JakeMemoryDebug.cs</Link>
     </Compile>
