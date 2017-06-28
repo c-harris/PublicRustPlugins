@@ -122,7 +122,7 @@ Need to provide your players a link to your discord, teamspeak, website, etc, bu
 * [Preview - Flying](https://www.youtube.com/watch?v=XE3ukh6UV0w)
 * [Preview - Controllable Doors](https://www.youtube.com/watch?v=Wspz-OVcAWc)
 
-After watching Colon Blow's youtube showcase of a gyrocopter, I was inspired to make a legitimate functional helicopter mod.
+After watching Colon Blow's [youtube showcase](https://www.youtube.com/watch?v=dtsldEgdzzY) of a gyrocopter, I was inspired to make a legitimate functional helicopter mod.
 
 As cool as Colon's looked, it was a cheaty way of doing it. He was making the player the parent object and no clipping around the map at a slow speed. Sure, it looks cool in a showcase video but it would be a nightmare to manage as a public plugin.
 
