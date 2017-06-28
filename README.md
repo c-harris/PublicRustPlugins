@@ -95,6 +95,10 @@ Players love to afk craft tons of materials, and leave their computer running. T
 ## DayZ Magazines
 
 * Work-In-Progress
+* [Preview - Magazines](https://gyazo.com/35ebc3925acac4710d223857d462e2b7)
+* [Preview - Bullets](https://gyazo.com/49e055c301dbda3e28c7a3425e9da52c)
+* [Preview - Manually Loading Magazines](https://www.youtube.com/watch?v=LebVehfVctA)
+* [Preview - Reloading](https://www.youtube.com/watch?v=-ok9QqmCR78)
 
 Plugin was inspired by the way weapons work in DayZ. The item icons were also taken from the DayZ Standalone game files. 
 
@@ -115,6 +119,8 @@ Need to provide your players a link to your discord, teamspeak, website, etc, bu
 ## Gyro Heli
 
 * Work In Progress
+* [Preview - Flying](https://www.youtube.com/watch?v=XE3ukh6UV0w)
+* [Preview - Controllable Doors](https://www.youtube.com/watch?v=Wspz-OVcAWc)
 
 After watching Colon Blow's youtube showcase of a gyrocopter, I was inspired to make a legitimate functional helicopter mod.
 
