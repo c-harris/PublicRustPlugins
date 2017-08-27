@@ -16,9 +16,40 @@
     "assets/bundled/prefabs/autospawn/resource/loot/trash-pile-1.prefab": "LootSpawn.TrashPile",
     "assets/bundled/prefabs/autospawn/resource/loot/loot-barrel-1.prefab": "LootSpawn.Barrel",
     "assets/bundled/prefabs/autospawn/resource/loot/loot-barrel-2.prefab": "LootSpawn.Barrel",
-    "assets/prefabs/npc/patrol helicopter/heli_crate.prefab": "assets/prefabs/npc/patrol helicopter/heli_crate.prefab"
+    "assets/prefabs/npc/patrol helicopter/heli_crate.prefab": "assets/prefabs/npc/patrol helicopter/heli_crate.prefab",
+    "assets/bundled/prefabs/radtown/crate_elite.prefab": "Lootspawn.EliteCrate"
   },
   "allLootTables": {
+    "Lootspawn.EliteCrate": {
+      "itemName": "Lootspawn.EliteCrate",
+      "children": [
+        {
+          "definition": "Items.VeryRare",
+          "weight": 100.0
+        },
+        {
+          "definition": "Items.Rare",
+          "weight": 200.0
+        },
+        {
+          "definition": "Items.Uncommon",
+          "weight": 300.0
+        },
+        {
+          "definition": "Collection.Rifles",
+          "weight": 100.0
+        },
+        {
+          "definition": "HQMetal_Large",
+          "weight": 200.0
+        },
+        {
+          "definition": "supply.signal",
+          "weight": 20.0
+        },
+      ],
+      "items": []
+    },
     "LootSpawn.SupplyDrop": {
       "itemName": "LootSpawn.SupplyDrop",
       "children": [
