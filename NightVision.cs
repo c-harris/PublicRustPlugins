@@ -14,7 +14,7 @@ using UnityEngine;
 
 namespace Oxide.Plugins
 {
-    [Info("NightVision", "Jake_Rich", "1.0.0")]
+    [Info("NightVision", "Jake_Rich", "1.0.1")]
     [Description("See at night")]
 
     public class NightVision : RustPlugin
@@ -86,9 +86,14 @@ namespace Oxide.Plugins
             {
                 bool daytime = TOD_Sky.Instance.Cycle.Hour < 20 && TOD_Sky.Instance.Cycle.Hour > 6;
                 float minute = (int)((TOD_Sky.Instance.Cycle.Hour - Math.Truncate(TOD_Sky.Instance.Cycle.Hour)) * 60);
+                int hour = TOD_Sky.Instance.Cycle.Hour < 13 ? (int)TOD_Sky.Instance.Cycle.Hour : (int)TOD_Sky.Instance.Cycle.Hour - 12;
+                if (hour == 0)
+                {
+                    hour = 12;
+                }
                 return
                 $"{(daytime ? "Day" : "Night")}\n" +
-                $"{(int)TOD_Sky.Instance.Cycle.Hour}:{minute.ToString("00")}{(TOD_Sky.Instance.Cycle.Hour < 12 ? "am" : "pm")}"; //I hate this bracketed statment, but I won't change it so it should be fine
+                $"{hour}:{minute.ToString("00")}{(TOD_Sky.Instance.Cycle.Hour < 12 ? "am" : "pm")}"; //I hate this bracketed statment, but I won't change it so it should be fine
             };
             label.AddOutline();
             _timer = timer.Every(5f, TimerLoop);
