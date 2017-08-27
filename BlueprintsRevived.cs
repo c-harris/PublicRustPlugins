@@ -10,7 +10,7 @@ using Rust;
 
 namespace Oxide.Plugins
 {
-    [Info("BlueprintsRevived", "Jake_Rich", "1.2.2", ResourceId = 2433)]
+    [Info("BlueprintsRevived", "Jake_Rich", "1.2.3", ResourceId = 2433)]
     [Description("The original Blueprint System with balance changes!")]
 
     public class BlueprintsRevived : RustPlugin
@@ -160,7 +160,7 @@ namespace Oxide.Plugins
         public void ReloadAllSettings()
         {
             DefaultSettings_BlueprintTiers.Reload();
-            DefaultSettings_BlueprintTiers.Instance.Initialize();
+            DefaultSettings_BlueprintTiers.Instance.Initialize(DefaultSettings_BlueprintTiers.Instance);
             DefaultSettings_BlueprintTiers.Save();
 
             Settings = Config.ReadObject<SavedSettings>(); //Finally converted to a configuration file in the right place! Wulf will love me!
@@ -208,16 +208,15 @@ namespace Oxide.Plugins
                              _plugin.Puts($"Failed to deserialize {name}\n{response}");
                              return;
                          }
+                         Instance.Initialize(deserialize);
                          Instance = deserialize;
                          Save();
-                         //Load();
                          _plugin.Puts($"Downloaded {name}.json");
                      }
                      else
                      {
                          _plugin.Puts($"Failed to download {name} settings!");
                      }
-                     Instance.Initialize();
                      Save();
                  }, _plugin, headers, 60);
             }
@@ -277,7 +276,7 @@ namespace Oxide.Plugins
 
         public class BaseConfigClass
         {
-            public virtual void Initialize()
+            public virtual void Initialize(BaseConfigClass config)
             {
 
             }
@@ -365,9 +364,24 @@ namespace Oxide.Plugins
 
             public Dictionary<string, GroupLootDefinition> allLootTables { get; set; } = new Dictionary<string, GroupLootDefinition>();
 
-            public override void Initialize()
+            public override void Initialize(BaseConfigClass config)
             {
-                base.Initialize();
+                base.Initialize(config);
+                var newConfig = config as SavedLootTables;
+                foreach(var assignment in newConfig.lootContainerAssignments)
+                {
+                    if (!lootContainerAssignments.ContainsKey(assignment.Key))
+                    {
+                        lootContainerAssignments[assignment.Key] = assignment.Value;
+                    }
+                }
+                foreach (var lootTable in newConfig.allLootTables)
+                {
+                    if (!allLootTables.ContainsKey(lootTable.Key))
+                    {
+                        allLootTables[lootTable.Key] = lootTable.Value;
+                    }
+                }
                 foreach (var ent in GameObject.FindObjectsOfType<BaseNetworkable>())
                 {
                     _plugin.OnEntitySpawned(ent);
@@ -399,9 +413,8 @@ namespace Oxide.Plugins
         {
             public Dictionary<string, SpawnPointConfiguration> monumentResearchBenches { get; set; } = new Dictionary<string, SpawnPointConfiguration>();
 
-            public override void Initialize()
+            public override void Initialize(BaseConfigClass config)
             {
-                base.Initialize();
                 _plugin.SpawnMonumentBenches();
             }
         }
@@ -424,7 +437,7 @@ namespace Oxide.Plugins
                 }
             }
 
-            public override void Initialize()
+            public override void Initialize(BaseConfigClass config)
             {
                 foreach (var item in ItemManager.itemList)
                 {
@@ -548,6 +561,10 @@ namespace Oxide.Plugins
 
             }
         }
+
+        #endregion
+
+        #region Configuration - Default Values
 
         #endregion
 
@@ -3596,10 +3613,13 @@ namespace Oxide.Plugins
             {
                 return;
             }
-            container.inventory.Clear();
             if (container.PrefabName == "assets/prefabs/npc/patrol helicopter/heli_crate.prefab") //Ignore heli crates
             {
                 return;
+            }
+            else
+            {
+                container.inventory.Clear();
             }
 
             string name = "";

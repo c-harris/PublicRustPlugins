@@ -112,6 +112,54 @@ namespace Oxide.Plugins
             }
         }
 
+        [ChatCommand("dbg")]
+        void VisualDebuggingLookingAt(BasePlayer player)
+        {
+            if (!player.IsAdmin)
+            {
+                PrintToChat(player, "This command is for admins only.");
+                return;
+            }
+
+            BaseEntity ent;
+            if (!GetEntityLookingAt(player, out ent))
+            {
+                PrintToChat(player, "You aren't looking at an entity!");
+                return;
+            }
+
+            if (UI._player == null)
+            {
+                UI.ShowPlayer(player, ent);
+            }
+            else
+            {
+                UI.HidePlayer(player);
+            }
+        }
+
+        public bool GetEntityLookingAt(BasePlayer player, out BaseEntity entity)
+        {
+            entity = null;
+            RaycastHit raycastHit;
+            Ray ray = player.eyes.BodyRay();
+
+            if (!Physics.Raycast(ray, out raycastHit, 4f, LayerMask.GetMask("Reserved1")))
+            {
+                return false;
+            }
+            else
+            {
+                entity = raycastHit.GetEntity();
+                if (entity != null)
+                {
+                    return true;
+                }
+
+            }
+            return false;
+        }
+
         public static bool IsValueType(object obj)
         {
             if (obj == null)
@@ -164,9 +212,9 @@ namespace Oxide.Plugins
                 {
                     elements = GetCount();
                 }
-                if (_target is HashSet<object>)
+                if (_target is IEnumerable<object>)
                 {
-                    elements = (_target as HashSet<object>).Count;
+                    elements = (_target as IEnumerable<object>).Count();
                 }
 
                 #endregion
@@ -210,7 +258,7 @@ namespace Oxide.Plugins
 
                 #region Methods
 
-                foreach (var method in Type.GetMethods())
+                foreach (var method in Type.GetMethods(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance))
                 {
                     if (method?.GetParameters().Length != 0)
                     {
@@ -1045,10 +1093,11 @@ namespace Oxide.Plugins
                 HideAll();
             }
 
-            public void ShowPlayer(BasePlayer player)
+            public void ShowPlayer(BasePlayer player, object obj = null)
             {
                 _player = player;
-                rootObject = new ObjectMemoryInfo(Oxide.Core.Interface.Oxide.RootPluginManager.GetPlugins(), int.MaxValue, "Plugins");
+                obj = obj ?? Oxide.Core.Interface.Oxide.RootPluginManager.GetPlugins();
+                rootObject = new ObjectMemoryInfo(obj, int.MaxValue, "Plugins");
                 ShowObject(rootObject);
             }
 

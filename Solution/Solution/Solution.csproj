@@ -51,11 +51,14 @@
     <Compile Include="..\..\EasyChatCommands.cs">
       <Link>EasyChatCommands.cs</Link>
     </Compile>
-    <Compile Include="..\..\JakeMemoryDebug.cs">
-      <Link>JakeMemoryDebug.cs</Link>
+    <Compile Include="..\..\GyroHeli.cs">
+      <Link>GyroHeli.cs</Link>
     </Compile>
     <Compile Include="..\..\JakeUIFramework.cs">
       <Link>JakeUIFramework.cs</Link>
+    </Compile>
+    <Compile Include="..\..\NightVision.cs">
+      <Link>NightVision.cs</Link>
     </Compile>
     <Compile Include="..\..\NoDespawning.cs">
       <Link>NoDespawning.cs</Link>
@@ -69,12 +72,6 @@
     <Compile Include="..\..\RecycleTweaks.cs">
       <Link>RecycleTweaks.cs</Link>
     </Compile>
-    <Compile Include="..\..\RustGuard.cs">
-      <Link>RustGuard.cs</Link>
-    </Compile>
-    <Compile Include="..\..\RustGuardManager.cs">
-      <Link>RustGuardManager.cs</Link>
-    </Compile>
     <Compile Include="..\..\ShorterNights.cs">
       <Link>ShorterNights.cs</Link>
     </Compile>
@@ -84,42 +81,9 @@
     <Compile Include="..\..\WeaponsOnBack.cs">
       <Link>WeaponsOnBack.cs</Link>
     </Compile>
-    <Compile Include="Properties\AssemblyInfo.cs" />
-  </ItemGroup>
-  <ItemGroup>
-    <Content Include="OxideReferences\Assembly-CSharp.dll" />
-    <Content Include="OxideReferences\Facepunch.Console.dll" />
-    <Content Include="OxideReferences\Facepunch.Rcon.dll" />
-    <Content Include="OxideReferences\I18N.dll" />
-    <Content Include="OxideReferences\I18N.West.dll" />
-    <Content Include="OxideReferences\Mono.Cecil.dll" />
-    <Content Include="OxideReferences\Mono.Cecil.Mdb.dll" />
-    <Content Include="OxideReferences\Mono.Cecil.Pdb.dll" />
-    <Content Include="OxideReferences\Mono.Cecil.Rocks.dll" />
-    <Content Include="OxideReferences\Mono.Data.Tds.dll" />
-    <Content Include="OxideReferences\Mono.Posix.dll" />
-    <Content Include="OxideReferences\Mono.Security.dll" />
-    <Content Include="OxideReferences\MySql.Data.dll" />
-    <Content Include="OxideReferences\Newtonsoft.Json.dll" />
-    <Content Include="OxideReferences\Oxide.Core.CSharp.dll" />
-    <Content Include="OxideReferences\Oxide.Core.dll" />
-    <Content Include="OxideReferences\Oxide.Core.MySql.dll" />
-    <Content Include="OxideReferences\Oxide.Core.SQLite.dll" />
-    <Content Include="OxideReferences\Oxide.Core.Unity.dll" />
-    <Content Include="OxideReferences\Oxide.Game.Rust.dll" />
-    <Content Include="OxideReferences\protobuf-net.dll" />
-    <Content Include="OxideReferences\System.Configuration.Install.dll" />
-    <Content Include="OxideReferences\System.Data.dll" />
-    <Content Include="OxideReferences\System.Data.SQLite.dll" />
-    <Content Include="OxideReferences\System.Drawing.dll" />
-    <Content Include="OxideReferences\System.Runtime.Serialization.dll" />
-    <Content Include="OxideReferences\System.Transactions.dll" />
-    <Content Include="OxideReferences\System.Xml.dll" />
-    <Content Include="OxideReferences\System.Xml.Linq.dll" />
-    <Content Include="OxideReferences\UnityEngine.dll" />
-    <Content Include="OxideReferences\UnityEngine.Networking.dll" />
-    <Content Include="OxideReferences\UnityEngine.UI.dll" />
-    <Content Include="OxideReferences\websocket-sharp.dll" />
+    <Compile Include="BanSync.cs" />
+    <Compile Include="BuildManager.cs" />
+    <Compile Include="JakeFramework.cs" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="ApexAI">
@@ -131,12 +95,13 @@
     <Reference Include="ApexShared">
       <HintPath>OxideReferences\ApexShared.dll</HintPath>
     </Reference>
-    <Reference Include="Assembly-CSharp, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
+    <Reference Include="Assembly-CSharp">
       <HintPath>OxideReferences\Assembly-CSharp.dll</HintPath>
     </Reference>
-    <Reference Include="Facepunch.Console, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
+    <Reference Include="Assembly-CSharp-firstpass">
+      <HintPath>..\..\..\..\..\..\..\RustServer\Server\rustds\RustDedicated_Data\Managed\Assembly-CSharp-firstpass.dll</HintPath>
+    </Reference>
+    <Reference Include="Facepunch.Console">
       <HintPath>OxideReferences\Facepunch.Console.dll</HintPath>
     </Reference>
     <Reference Include="Facepunch.Input">
@@ -148,8 +113,7 @@
     <Reference Include="Facepunch.Raknet">
       <HintPath>OxideReferences\Facepunch.Raknet.dll</HintPath>
     </Reference>
-    <Reference Include="Facepunch.Rcon, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
+    <Reference Include="Facepunch.Rcon">
       <HintPath>OxideReferences\Facepunch.Rcon.dll</HintPath>
     </Reference>
     <Reference Include="Facepunch.Steamworks">
@@ -161,76 +125,59 @@
     <Reference Include="Facepunch.UnityEngine">
       <HintPath>OxideReferences\Facepunch.UnityEngine.dll</HintPath>
     </Reference>
-    <Reference Include="I18N, Version=2.0.0.0, Culture=neutral, PublicKeyToken=0738eb9f132ed756, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
+    <Reference Include="I18N">
       <HintPath>OxideReferences\I18N.dll</HintPath>
     </Reference>
-    <Reference Include="I18N.West, Version=2.0.0.0, Culture=neutral, PublicKeyToken=0738eb9f132ed756, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
+    <Reference Include="I18N.West">
       <HintPath>OxideReferences\I18N.West.dll</HintPath>
     </Reference>
-    <Reference Include="Mono.Cecil, Version=0.9.6.0, Culture=neutral, PublicKeyToken=0738eb9f132ed756, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
+    <Reference Include="Mono.Cecil">
       <HintPath>OxideReferences\Mono.Cecil.dll</HintPath>
     </Reference>
-    <Reference Include="Mono.Cecil.Mdb, Version=0.9.6.0, Culture=neutral, PublicKeyToken=0738eb9f132ed756, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
+    <Reference Include="Mono.Cecil.Mdb">
       <HintPath>OxideReferences\Mono.Cecil.Mdb.dll</HintPath>
     </Reference>
-    <Reference Include="Mono.Cecil.Pdb, Version=0.9.6.0, Culture=neutral, PublicKeyToken=0738eb9f132ed756, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
+    <Reference Include="Mono.Cecil.Pdb">
       <HintPath>OxideReferences\Mono.Cecil.Pdb.dll</HintPath>
     </Reference>
-    <Reference Include="Mono.Cecil.Rocks, Version=0.9.6.0, Culture=neutral, PublicKeyToken=0738eb9f132ed756, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
+    <Reference Include="Mono.Cecil.Rocks">
       <HintPath>OxideReferences\Mono.Cecil.Rocks.dll</HintPath>
     </Reference>
-    <Reference Include="Mono.Data.Tds, Version=2.0.0.0, Culture=neutral, PublicKeyToken=0738eb9f132ed756, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
+    <Reference Include="Mono.Data.Tds">
       <HintPath>OxideReferences\Mono.Data.Tds.dll</HintPath>
     </Reference>
     <Reference Include="Mono.Posix, Version=2.0.0.0, Culture=neutral, PublicKeyToken=0738eb9f132ed756, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>OxideReferences\Mono.Posix.dll</HintPath>
     </Reference>
-    <Reference Include="Mono.Security, Version=2.0.0.0, Culture=neutral, PublicKeyToken=0738eb9f132ed756, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
+    <Reference Include="Mono.Security">
       <HintPath>OxideReferences\Mono.Security.dll</HintPath>
     </Reference>
-    <Reference Include="MySql.Data, Version=6.9.5.0, Culture=neutral, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
+    <Reference Include="MySql.Data">
       <HintPath>OxideReferences\MySql.Data.dll</HintPath>
     </Reference>
-    <Reference Include="Newtonsoft.Json, Version=9.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
+    <Reference Include="Newtonsoft.Json">
       <HintPath>OxideReferences\Newtonsoft.Json.dll</HintPath>
     </Reference>
-    <Reference Include="Oxide.Core, Version=2.0.3331.0, Culture=neutral, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
+    <Reference Include="Oxide.Core">
       <HintPath>OxideReferences\Oxide.Core.dll</HintPath>
     </Reference>
-    <Reference Include="Oxide.Core.CSharp, Version=2.0.3331.0, Culture=neutral, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
+    <Reference Include="Oxide.Core.CSharp">
       <HintPath>OxideReferences\Oxide.Core.CSharp.dll</HintPath>
     </Reference>
-    <Reference Include="Oxide.Core.MySql, Version=2.0.3331.0, Culture=neutral, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
+    <Reference Include="Oxide.Core.MySql">
       <HintPath>OxideReferences\Oxide.Core.MySql.dll</HintPath>
     </Reference>
-    <Reference Include="Oxide.Core.SQLite, Version=2.0.3331.0, Culture=neutral, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
+    <Reference Include="Oxide.Core.SQLite">
       <HintPath>OxideReferences\Oxide.Core.SQLite.dll</HintPath>
     </Reference>
-    <Reference Include="Oxide.Core.Unity, Version=2.0.3331.0, Culture=neutral, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
+    <Reference Include="Oxide.Core.Unity">
       <HintPath>OxideReferences\Oxide.Core.Unity.dll</HintPath>
     </Reference>
-    <Reference Include="Oxide.Game.Rust, Version=2.0.3331.0, Culture=neutral, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
+    <Reference Include="Oxide.Game.Rust">
       <HintPath>OxideReferences\Oxide.Game.Rust.dll</HintPath>
     </Reference>
-    <Reference Include="protobuf-net, Version=2.0.0.668, Culture=neutral, PublicKeyToken=257b51d87d2e4d67, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
+    <Reference Include="protobuf-net">
       <HintPath>OxideReferences\protobuf-net.dll</HintPath>
     </Reference>
     <Reference Include="Rust.Data">
@@ -246,114 +193,28 @@
       <HintPath>OxideReferences\Rust.Workshop.dll</HintPath>
     </Reference>
     <Reference Include="System" />
-    <Reference Include="System.Configuration.Install, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>OxideReferences\System.Configuration.Install.dll</HintPath>
-    </Reference>
-    <Reference Include="System.Data, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>OxideReferences\System.Data.dll</HintPath>
-    </Reference>
-    <Reference Include="System.Data.SQLite, Version=1.0.97.0, Culture=neutral, PublicKeyToken=db937bc2d44ff139, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
+    <Reference Include="System.Configuration.Install" />
+    <Reference Include="System.Data" />
+    <Reference Include="System.Data.SQLite">
       <HintPath>OxideReferences\System.Data.SQLite.dll</HintPath>
     </Reference>
-    <Reference Include="System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>OxideReferences\System.Drawing.dll</HintPath>
-    </Reference>
-    <Reference Include="System.Runtime.Serialization, Version=3.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>OxideReferences\System.Runtime.Serialization.dll</HintPath>
-    </Reference>
-    <Reference Include="System.Transactions, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>OxideReferences\System.Transactions.dll</HintPath>
-    </Reference>
-    <Reference Include="System.Xml, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>OxideReferences\System.Xml.dll</HintPath>
-    </Reference>
-    <Reference Include="System.Xml.Linq, Version=3.5.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>OxideReferences\System.Xml.Linq.dll</HintPath>
-    </Reference>
-    <Reference Include="UnityEngine, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
+    <Reference Include="System.Drawing" />
+    <Reference Include="System.Runtime.Serialization" />
+    <Reference Include="System.Transactions" />
+    <Reference Include="System.Xml" />
+    <Reference Include="System.Xml.Linq" />
+    <Reference Include="UnityEngine">
       <HintPath>OxideReferences\UnityEngine.dll</HintPath>
     </Reference>
-    <Reference Include="UnityEngine.Networking, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
+    <Reference Include="UnityEngine.Networking">
       <HintPath>OxideReferences\UnityEngine.Networking.dll</HintPath>
     </Reference>
-    <Reference Include="UnityEngine.UI, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
+    <Reference Include="UnityEngine.UI">
       <HintPath>OxideReferences\UnityEngine.UI.dll</HintPath>
     </Reference>
-    <Reference Include="websocket-sharp, Version=1.0.4.0, Culture=neutral, PublicKeyToken=5660b08a1845a91e, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
+    <Reference Include="websocket-sharp">
       <HintPath>OxideReferences\websocket-sharp.dll</HintPath>
     </Reference>
-  </ItemGroup>
-  <ItemGroup>
-    <Compile Include="..\..\AntiFoundationStack.cs">
-      <Link>AntiFoundationStack.cs</Link>
-    </Compile>
-    <Compile Include="..\..\BlueprintsRevived.cs">
-      <Link>BlueprintsRevived.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Combatlog.cs">
-      <Link>Combatlog.cs</Link>
-    </Compile>
-    <Compile Include="..\..\CraftingTable.cs">
-      <Link>CraftingTable.cs</Link>
-    </Compile>
-    <Compile Include="..\..\CraftQueueSaver.cs">
-      <Link>CraftQueueSaver.cs</Link>
-    </Compile>
-    <Compile Include="..\..\DayZMags.cs">
-      <Link>DayZMags.cs</Link>
-    </Compile>
-    <Compile Include="..\..\EasyChatCommands.cs">
-      <Link>EasyChatCommands.cs</Link>
-    </Compile>
-    <Compile Include="..\..\GyroHeli.cs">
-      <Link>GyroHeli.cs</Link>
-    </Compile>
-    <Compile Include="..\..\JakeMemoryDebug.cs">
-      <Link>JakeMemoryDebug.cs</Link>
-    </Compile>
-    <Compile Include="..\..\JakeUIFramework.cs">
-      <Link>JakeUIFramework.cs</Link>
-    </Compile>
-    <Compile Include="..\..\NoDespawning.cs">
-      <Link>NoDespawning.cs</Link>
-    </Compile>
-    <Compile Include="..\..\QueueHolder.cs">
-      <Link>QueueHolder.cs</Link>
-    </Compile>
-    <Compile Include="..\..\RangeFinder.cs">
-      <Link>RangeFinder.cs</Link>
-    </Compile>
-    <Compile Include="..\..\RecycleTweaks.cs">
-      <Link>RecycleTweaks.cs</Link>
-    </Compile>
-    <Compile Include="..\..\RustGuard.cs">
-      <Link>RustGuard.cs</Link>
-    </Compile>
-    <Compile Include="..\..\RustGuardManager.cs">
-      <Link>RustGuardManager.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ShorterNights.cs">
-      <Link>ShorterNights.cs</Link>
-    </Compile>
-    <Compile Include="..\..\VisualDebug.cs">
-      <Link>VisualDebug.cs</Link>
-    </Compile>
-    <Compile Include="..\..\WeaponsOnBack.cs">
-      <Link>WeaponsOnBack.cs</Link>
-    </Compile>
-    <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

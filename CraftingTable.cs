@@ -339,7 +339,7 @@ namespace Oxide.Plugins
                 int endIndex = response.IndexOf('\'', index + 1);
                 string url = response.Substring(index + 1, endIndex - index - 1);
                 //_plugin.Puts($"URL: {url} Start: {startIndex} {index} {endIndex}");
-                AddImage(url, "pistol.eoka", skinID);
+                AddImage(url, shortname, skinID);
             }, _plugin, null, 30f);
         }
 
@@ -525,7 +525,6 @@ namespace Oxide.Plugins
                 pluginSettings.Identifier = $"{plugin.Name}{plugin.Author}";
                 Mods.Add(pluginSettings);
                 SetupImages(pluginSettings);
-                _plugin.Puts(JsonConvert.SerializeObject(pluginSettings));
                 OnPluginAddedOrRemoved();
             }
 

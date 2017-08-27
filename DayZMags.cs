@@ -351,7 +351,7 @@ namespace Oxide.Plugins
             }
             if (item1.skin != item2.skin)
             {
-                return null;
+                return false;
             }
             if (AmmoHelper.IsAmmo(item1) && AmmoHelper.IsAmmo(item2))
             {
@@ -1275,6 +1275,7 @@ namespace Oxide.Plugins
         {
 
         }
+
         #endregion
 
         public static HashSet<ulong> AmmoSkinIDs;
